@@ -11,7 +11,8 @@
 
 ```python
 '''
-It's a good habit not to use public fields, the class fields should all be private. Private means the fields are only visible within the class and should not be handled or manipulated from outside.
+It's a good habit not to use public fields, the class fields should all be private.
+Private fields are only visible within the class and should not be manipulated from outside.
 '''
 
 class GameState():
