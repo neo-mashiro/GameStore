@@ -1,4 +1,4 @@
-# Note
+# Warm up
 
 Games in this folder are built on a simple browser-based graphic user interface module `simplegui`. To play, simply copy and paste code into [codeskulptor](http://www.codeskulptor.org/) and hit run. Note that things might behave a bit different in browsers other than chrome. At this point, all of the code is written in Python 2.7, so please use the python 2 version of codeskulptor.
 
