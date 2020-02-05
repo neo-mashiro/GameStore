@@ -1,14 +1,29 @@
 # Reference
 
-- IIPP + PoC, [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals), Rice, Coursera
-- SimpleGUICS2Pygame, PyOPENGL documentation
+- [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) (IIPP + PoC), Rice, Coursera
+- PyOPENGL documentation
 - https://wiki.python.org/moin/PythonGames
 - first read source code of many other fantastic games to get a sense
 
+# Install
 
-## Note
-- limit the number of global variables, as the script size increases, global variables could make a bunch of nasty bugs that are hard to fix.
-- Build a class to keep track of the game status from multiple perspectives, wrap global variables up into fields within the class, and add methods as appropriate.
+```python
+'''
+sudo apt-get install xxx
+```
+
+# How to play
+
+Instructions TBD
+
+# Demo
+
+www.github.io/neo-mashiro/xxx
+
+# Note
+
+1. Limit the number of global variables, as the script size increases, global variables could make a bunch of nasty bugs that are hard to fix.
+2. Build a class to keep track of the game status from multiple perspectives, wrap global variables up into fields within the class, and add methods as appropriate.
 
 ```python
 '''
