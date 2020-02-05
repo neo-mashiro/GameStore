@@ -1,8 +1,9 @@
 # Reference
 
-- A. [IIPP + PoC, Fundamentals of Computing Specialization, Rice, Coursera](https://www.coursera.org/specializations/computer-fundamentals)
-- B. SimpleGUICS2Pygame, PyOPENGL documentation
-- C. first read source code of many other fantastic games to get a sense
+- IIPP + PoC, [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals), Rice, Coursera
+- SimpleGUICS2Pygame, PyOPENGL documentation
+- https://wiki.python.org/moin/PythonGames
+- first read source code of many other fantastic games to get a sense
 
 
 ## Note
