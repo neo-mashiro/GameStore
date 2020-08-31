@@ -10,20 +10,19 @@
 
 # style a whole widget class globally
 <Ball>:
-    size: 30, 30
+    size: 60, 60
     canvas:
-        Color:
-            rgba: 0, 0, 1, 0.8  # rgb range (0, 255) is scaled to (0, 1)
         Ellipse:
             # in kivy, origin is at the bottom left, drawing goes towards the top right direction
             pos: self.pos  # to be set in the root widget or updated in .py
             size: self.size
+            source: "support/pong_ball.png"
 
 <Paddle>:
-    size: 10, 180
+    size: 10, self.length  # dynamically updated in .py
     canvas:
         Color:
-            rgba: self.rgba  # dynamically updated in .py
+            rgba: 0, 0, 0, 0.6  # rgb range (0, 255) is scaled to (0, 1)
         Rectangle:
             # Rectangle.pos is the bottom left pixel, Ellipse.pos is the leftmost pixel
             pos: self.pos
@@ -37,12 +36,18 @@
     player2: player2  # var: id (variable names must match with those in .py, id is user-defined)
 
     # add graphics instructions in canvas (root)
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "support/pong_board.jpg"
+
     canvas:
         Color:  # ~ from kivy.graphics import Color
             rgba: 1, 0, 0, 0.5
         Rectangle:  # ~ from kivy.graphics import Rectangle
-            pos: self.center_x - 2, 0  # x, y
-            size: 4, self.height       # width, height
+            pos: self.center_x - 1, 0  # x, y
+            size: 2, self.height       # width, height
 
     # add widgets (can group widgets in layout, layouts can be nested, e.g. BoxLayout, FloatLayout, GridLayout)
     Label:
@@ -51,12 +56,14 @@
         center_x: root.width / 4
         center_y: root.height / 2
         text: str(root.score1)
+        color: 0, 0, 0, 1
 
     Label:
         font_size: 70
         center_x: root.width / 4 * 3
         center_y: root.height / 2
         text: str(root.score2)
+        color: 0, 0, 0, 1
 
     Ball:
         id: ball

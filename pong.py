@@ -1,16 +1,15 @@
 import random
-from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
 from kivy.vector import Vector
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivymd.app import MDApp
 
 
 Builder.load_file('pong.kv')
-# Window.maximize()
-# Window.clearcolor = (0, 153/255, 51/255, 255)
+Window.size = (720 * 1.2, 450 * 1.2)
 
 
 class Ball(Widget):
@@ -24,11 +23,7 @@ class Ball(Widget):
 
 
 class Paddle(Widget):
-    r = NumericProperty(0)
-    g = NumericProperty(1)
-    b = NumericProperty(0)
-    a = NumericProperty(0.8)
-    rgba = ReferenceListProperty(r, g, b, a)
+    length = NumericProperty(180)
 
 
 class Root(Widget):
@@ -59,11 +54,11 @@ class Root(Widget):
         if self.ball.x < -self.ball.width:
             self.score2 += 1
             self.serve_ball()
-            self.player2.rgba = (1, 0, 0, 1) if self.score2 > 3 else self.player2.rgba
+            self.player1.length = max(self.player1.length - 10, 50)  # decrement loser's paddle length
         elif self.ball.x > self.width:
             self.score1 += 1
             self.serve_ball()
-            self.player1.rgba = (1, 0, 0, 1) if self.score1 > 3 else self.player1.rgba
+            self.player2.length = max(self.player2.length - 10, 50)
 
         self.ball.move()
 
