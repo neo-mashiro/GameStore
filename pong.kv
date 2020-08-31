@@ -1,0 +1,73 @@
+# ****.kv:
+#     - the purpose of using this file is to separate the logic of our application
+#       and its GUI components, for the sake of clarity and better maintainability.
+#     - style your application inside this .kv file (think of it as CSS).
+#     - use this file to add widgets, design layout and appearance, register events.
+#     - the main contents and logic should be left to the .py file.
+#     - the two files are connected via defined global variables and some special
+#       variables such as self, parent, root and app, etc.
+
+
+# style a whole widget class globally
+<Ball>:
+    size: 30, 30
+    canvas:
+        Color:
+            rgba: 0, 0, 1, 0.8  # rgb range (0, 255) is scaled to (0, 1)
+        Ellipse:
+            # in kivy, origin is at the bottom left, drawing goes towards the top right direction
+            pos: self.pos  # to be set in the root widget or updated in .py
+            size: self.size
+
+<Paddle>:
+    size: 10, 180
+    canvas:
+        Color:
+            rgba: self.rgba  # dynamically updated in .py
+        Rectangle:
+            # Rectangle.pos is the bottom left pixel, Ellipse.pos is the leftmost pixel
+            pos: self.pos
+            size: self.size
+
+
+# style the root widget
+<Root>:
+    ball: ball
+    player1: player1  # define global variables that link to the class-level properties from .py
+    player2: player2  # var: id (variable names must match with those in .py, id is user-defined)
+
+    # add graphics instructions in canvas (root)
+    canvas:
+        Color:  # ~ from kivy.graphics import Color
+            rgba: 1, 0, 0, 0.5
+        Rectangle:  # ~ from kivy.graphics import Rectangle
+            pos: self.center_x - 2, 0  # x, y
+            size: 4, self.height       # width, height
+
+    # add widgets (can group widgets in layout, layouts can be nested, e.g. BoxLayout, FloatLayout, GridLayout)
+    Label:
+        # we can override the global style settings at the instance level
+        font_size: 70
+        center_x: root.width / 4
+        center_y: root.height / 2
+        text: str(root.score1)
+
+    Label:
+        font_size: 70
+        center_x: root.width / 4 * 3
+        center_y: root.height / 2
+        text: str(root.score2)
+
+    Ball:
+        id: ball
+        center: root.center
+
+    Paddle:
+        id: player1
+        x: 0
+        center_y: root.center_y
+
+    Paddle:
+        id: player2
+        x: root.width - self.width
+        center_y: root.center_y
