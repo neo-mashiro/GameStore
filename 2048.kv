@@ -1,0 +1,43 @@
+<Tile>:
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            texture: self.texture
+
+<Root>:
+    orientation: 'vertical'
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "assets/2048_board.jpeg"
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 13, 10, 14, 0  # left-top-right-bottom
+        spacing: 90
+        size_hint: (1, 6/42)
+
+        Label:
+            font_name: 'perpeta'
+            font_size: 30
+            color: 0, 0, 0, 1
+            pos_hint: {"center_y": 0.4}
+            text: 'Best Score: ' + "{:04d}".format(board.best_score)
+
+        MDFlatButton:
+            font_name: 'OpenSans'
+            font_size: 15
+            text: 'New Game'
+            pos_hint: {"center_y": 0.45}
+            md_bg_color: 51/255, 204/255, 51/255, 0.8
+            on_press: board.reset()
+
+    FloatLayout:
+        Board:
+            id: board
+            size_hint: (None, None)
+            pos: self.border_size, self.border_size
+            size: self.cols * self.tile_size, self.rows * self.tile_size
