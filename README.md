@@ -58,12 +58,7 @@ in play                   | win
 # Reference
 
 - [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals), Rice, Coursera
-
 - Kivy framework API - https://kivy.org/doc/stable/api-kivy.html
-
 - KivyMD documentation - https://kivymd.readthedocs.io/en/latest/index.html
-
 - free image assets: https://www.goodfon.com/
-
 - free transparent PNGs - https://www.stickpng.com/
-
