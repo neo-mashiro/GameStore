@@ -8,10 +8,6 @@ from kivy.core.window import Window
 from kivymd.app import MDApp
 
 
-Builder.load_file('pong.kv')
-Window.size = (720 * 1.2, 450 * 1.2)
-
-
 class Ball(Widget):
     # for cross-platform compatibility, use class-level properties (they are not static attributes)
     velocity_x = NumericProperty(0)
@@ -40,7 +36,7 @@ class Root(Widget):
         self.ball.center = self.center
         self.ball.velocity = Vector(4, 4).rotate(random.randint(0, 360))
 
-    def update_ball(self, fps):
+    def update_ball(self, interval):
         # bounce off top and bottom
         if self.ball.y <= 0 or (self.ball.y >= self.height - self.ball.height):
             self.ball.velocity_y *= -1
@@ -77,9 +73,11 @@ class Game(MDApp):
     def build(self):
         root = Root()
         root.serve_ball()
-        Clock.schedule_interval(root.update_ball, 1/1200)
+        Clock.schedule_interval(root.update_ball, 0)
         return root
 
 
 if __name__ == "__main__":
+    Builder.load_file('pong.kv')
+    Window.size = (720 * 1.2, 450 * 1.2)
     Game().run()

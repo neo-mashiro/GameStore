@@ -4,19 +4,17 @@
 #     - style your application inside this .kv file (think of it as CSS).
 #     - use this file to add widgets, design layout and appearance, register events.
 #     - the main contents and logic should be left to the .py file.
-#     - the two files are connected via defined global variables and some special
-#       variables such as self, parent, root and app, etc.
 
 
-# style a whole widget class globally
+# style a whole widget class globally (a class rule)
 <Ball>:
     size: 60, 60
     canvas:
         Ellipse:
-            # in kivy, origin is at the bottom left, drawing goes towards the top right direction
+            # in kivy, pos/origin is at the bottom left, drawing goes towards the top right direction
             pos: self.pos  # to be set in the root widget or updated in .py
             size: self.size
-            source: "support/pong_ball.png"
+            source: "assets/pong_ball.png"
 
 <Paddle>:
     size: 10, self.length  # dynamically updated in .py
@@ -24,7 +22,6 @@
         Color:
             rgba: 0, 0, 0, 0.6  # rgb range (0, 255) is scaled to (0, 1)
         Rectangle:
-            # Rectangle.pos is the bottom left pixel, Ellipse.pos is the leftmost pixel
             pos: self.pos
             size: self.size
 
@@ -32,15 +29,15 @@
 # style the root widget
 <Root>:
     ball: ball
-    player1: player1  # define global variables that link to the class-level properties from .py
-    player2: player2  # var: id (variable names must match with those in .py, id is user-defined)
+    player1: player1  # bind class-level property from .py to a corresponding id so as to reference it
+    player2: player2  # property: id (property names must match with those in .py, id is user-defined)
 
     # add graphics instructions in canvas (root)
     canvas.before:
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "support/pong_board.jpg"
+            source: "assets/pong_board.jpg"
 
     canvas:
         Color:  # ~ from kivy.graphics import Color
@@ -51,7 +48,7 @@
 
     # add widgets (can group widgets in layout, layouts can be nested, e.g. BoxLayout, FloatLayout, GridLayout)
     Label:
-        # we can override the global style settings at the instance level
+        # we can override the class rule at the instance level
         font_size: 70
         center_x: root.width / 4
         center_y: root.height / 2
