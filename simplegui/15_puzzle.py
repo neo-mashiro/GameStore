@@ -190,6 +190,8 @@ class Puzzle:
                         step = 'd' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] - 1) * 'd' + 'r'
                     elif curr_pos[0] == 1:
                         step = 'u' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] + 1) * 'd' + 'r'
+                    elif curr_pos[0] == 2:
+                        step = 'u' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] + 1) * 'd' + 'r'
                 self.update_puzzle(step)
                 move += step
             

@@ -35,7 +35,7 @@ class Puzzle:
         self._width = puzzle_width
         self._grid = [[col + puzzle_width * row
                        for col in range(self._width)]
-                      for row in range(self._height)]
+                       for row in range(self._height)]
 
         if initial_grid:
             for row in range(puzzle_height):
@@ -181,6 +181,8 @@ class Puzzle:
                     if curr_pos[0] == 0:
                         step = 'd' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] - 1) * 'd' + 'r'
                     elif curr_pos[0] == 1:
+                        step = 'u' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] + 1) * 'd' + 'r'
+                    elif curr_pos[0] == 2:
                         step = 'u' + (curr_pos[1] - target_col + 1) * 'l' + (target_row - curr_pos[0] + 1) * 'd' + 'r'
                 self.update_puzzle(step)
                 move += step
@@ -496,7 +498,7 @@ class Board(Widget):
         self.redraw()
 
         Window.bind(on_key_down=self.on_key_down)
-        Clock.schedule_interval(self.tick, 0.25)
+        Clock.schedule_interval(self.tick, 0.15)
 
     def walk_tiles(self):
         for row in range(self.rows):
