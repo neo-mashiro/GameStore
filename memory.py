@@ -1,5 +1,29 @@
 # implementation of card game - Memory
 
+"""
+make it with a 6x6 rows with your favorite ACG characters icon (36/2 = 18 girls characters)
+create a button above the board that selects the theme, each theme features a different set of 18 characters
+when the button is clicked, pop up a dropdown list or alike that lets the user choose a theme
+of course, given the number of character images we need, place them in subfolders under `assets/...`
+
+add animation effects when the card is flipped on the board
+when the second card is flipped but don't match, let them stay onboard for 2 seconds before hiding them back
+during this process (before they are hided back), disable mouse clicks and just wait
+
+keep track of time elapsed in seconds in a text label
+keep track of total number of counts that have been made
+if all cards are matched, the user wins the game, pop up a dialog window saying congrats and best time so far
+
+Available themes:
+    0. Idolmaster 1
+    1. Idolmaster 2
+    2. railgun and index
+    3. lovelive
+    4. Fruits (use lime, orange pngs assets)
+    5. SAO
+    6. AUGUST???
+"""
+
 import simplegui
 import random
 
@@ -28,7 +52,7 @@ def mouseclick(pos):
       
     # determine which card is clicked on
     index = pos[0] // 50
-    print "You clicked card", str(index + 1)
+    print("You clicked card", str(index + 1))
 
     # if the card being clicked on is already exposed, do nothing
     if not exposed[index]:

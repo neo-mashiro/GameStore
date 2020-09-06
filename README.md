@@ -4,7 +4,11 @@ Draft implementations of some classic simple games in Python.
 
 Most of the game logic is borrowed from the [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) offered by Rice University on Coursera, which were originally built on `codeskulptor` and `simplegui` when I was taking the courses several years ago. I have added some customized functionalities and migrated them to [kivy](https://kivy.org/#home) so that the user interfaces look prettier with material design and animation effects.
 
-Kivy is a nice library for building cross-platform GUIs in Python especially when it comes to mobile applications, it's still being actively developed, but I personally do not like how it works, mostly due to its bizarre, counter-intuitive behaviors, horrible documentation and the lack of users & community support. The motivation of separating logic and interface design is nice, but for small desktop applications I think it's just making lives harder... It feels much better than the old-school Java Swing/AWT, but still far from perfect, hope it would improve in the future... _Write once, run away._
+Kivy is a nice library for building cross-platform GUIs in Python especially when it comes to mobile applications, it's still being actively developed, but I personally do not like how it works, mostly due to its bizarre, counter-intuitive behaviors, horrible documentation and the lack of users & community support. The motivation of separating logic and interface design is nice, but for small desktop applications I think it's just making lives harder... It feels much better than the old-school Java Swing/AWT, but still far from perfect, hope it would improve in the future...
+
+_Write once, run away._
+
+It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the technical work is anything but a non-trivial task, I believe I would be better off using web applications framework instead.
 
 
 
@@ -97,6 +101,8 @@ A nice game that tests your short-term memory.
 __Game Logic:__
 
 ...
+
+
 
 
 
