@@ -70,13 +70,13 @@ __Game Logic:__
 
 The 4x4 board contains 15 numbers from 1 to 15 and an empty tile. For convenience, the empty tile here is represented by the number 0. Given a random configuration of the board, make a sequence of moves by sliding the 0 tile to exchange position with numbers nearby, so as to move the board back to the solved configuration. (where numbers 0 to 15 are placed in order on the grid)
 
-On the top of the window is an _on-focus_ text field where the user can input a move string, it includes valid characters `{'u': 'up', 'd': 'down', 'l': 'left', 'r': 'right'}` and must not exceed 30 characters. When the user presses enter, numbers on the board will move according to the string. The user can also just use the keyboard arrow keys to move the 0 tile, or click the button to see the current moves that have been made.
+On the top of the window is an _on-focus_ text field where the user can input a move string, it includes valid characters `u:up d:down l:left r:right` and must not exceed 30 characters. When the user presses enter, numbers on the board will move according to the string. The user can also just use the keyboard arrow keys to move the 0 tile, or click the button to see the current moves that have been made.
 
-For any chaotic configuration, clicking the "solve puzzle" button will enter the solving mode, the board will start to show the moves step by step to return to the solved state. Before the solving stage finishes, enter and arrow keys are disabled so that no key events will be triggered, any move string typed into the text input field will simply be ignored as well.
+For any chaotic configuration, clicking the "solve puzzle" button enters the solving mode, the board will start to show the moves step by step to return to the solved state. Before this stage finishes, keyboard is disabled so that no key events will be triggered, any content typed into the text input field will simply be discarded.
 
 To make a slack UI design, the window is drawn in dark mode, and the board canvas uses a CSS light gradient background. On top of that, each tile superimposes a rectangle graphic instruction to increase the hue, draws the label number and applies a CSS style border image using a transparent crystal ball image. Below are the screenshots.
 
-__P.S.__ I guess Github has a limit on frame rate around 20 fps so the GIF is not rendered at the original speed (60 fps), sorry about that.
+__P.S.__ I guess Github has a limit on frame rate ~ 20 fps so the GIF is not rendered at the original speed (60 fps).
 
 |      enter a move string      |     move string too long      |
 | :---------------------------: | :---------------------------: |
@@ -89,6 +89,14 @@ __P.S.__ I guess Github has a limit on frame rate around 20 fps so the GIF is no
 
 
 
+
+## Memory
+
+A nice game that tests your short-term memory.
+
+__Game Logic:__
+
+...
 
 
 
