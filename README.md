@@ -104,9 +104,19 @@ __Game Logic:__
 
 
 
+credit:
+
+https://csgostash.com/
+
+https://august-soft.com/
+
+https://gochiusa.com
+
+the permission of using these banner and twitter icons have been granted
 
 
 
+Pyinstaller / Nuitka: package to .exe
 
 
 
