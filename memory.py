@@ -9,22 +9,41 @@ Specification:
 
 - Add animation effects when the card is flipped on the board
 - If the second card flipped does not match, let them stay onboard for 2 seconds before flipping back
-- During this process (before they are flipped back), disable mouse clicks and keyboard
+- When a click is being handled, disable mouse clicks until the handler returns
 
 - Keep track of time elapsed in seconds in a text label
 - Keep track of total number of flips that have been made
+- Keep track of the best record (shortest time) the player has achieved
 - If all cards are matched, the user wins, pop up a dialog window saying congrats and display score (time)
 
-Available themes:
-- ACG (default)
-- CSGO inventory skins 1 & 2
-- International Saimoe League (ISML) 1 & 2
+Things to note:
+
+- A standard kivy application supports only 1 thread (the main thread)
+- Window size and card size must be dynamically adjusted for different themes (different aspect ratios)
+- In kivy, execution does not wait for animation to finish, but will continue immediately
+- To wait for an event, use `Clock.schedule_interval()` together with a callback function
+- Test carefully with logging messages to eliminate any possible race conditions
+- Refrain from using `time.sleep()`, this will block the main event loop and freeze the window
+- For complicated concurrency issues, use the `asynckivy` library instead of `asyncio` or `threading`
+new library recently released on July, 25, 2020
+
+
+
+        The callback function to be scheduled by `Clock.schedule_interval(callback, 1/60)`.
+        The scheduled event will be automatically unscheduled as soon as this callback returns False.
+        Typically, callbacks do not accept extra arguments since they are referenced only by names.
+        To work with additional arguments, wrap it with a partial function when you bind to it.
+        An alternative is to use a lambda function if the callback code fits on one line.
+
 """
 
-
-import random
+import asynckivy as ak
 import numpy as np
+import os
+import random
+import time
 
+from functools import partial
 from io import BytesIO
 from PIL import Image as PilImage
 
@@ -32,108 +51,164 @@ from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 from kivy.core.text import LabelBase
-from kivy.graphics.context_instructions import Color
-from kivy.graphics.vertex_instructions import Rectangle, BorderImage
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ObjectProperty, StringProperty, OptionProperty, BoundedNumericProperty
+from kivy.properties import (
+    NumericProperty, ObjectProperty, StringProperty,
+    OptionProperty, BoundedNumericProperty, ListProperty
+)
+
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.utils import get_color_from_hex
+
 from kivymd.app import MDApp
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.list import OneLineAvatarIconListItem, ILeftBodyTouch
+from kivymd.uix.selectioncontrol import MDCheckbox
 
+##################################################################
+# global configuration variables
+##################################################################
 
-# game board configuration
-card_width = 150
+n_rows = 6
+n_cols = 6
 border_size = 10
+card_padding = 5
+fixed_width = 180
+
+base_dir = 'assets'
+images = {}
+themes = ['guns', 'knives']
 
 aspect_ratio = {
-    # aspect ratio for each theme
-    'acg': 1.00,
-    'isml1': 1.35,  # 480x648
-    'isml2': 1.35,  # 480x648
-    'csgo1': 0.75,  # 512x384
-    'csgo2': 0.75,  # 512x384
+    'guns': 0.75,    # 512x384
+    'knives': 0.75,  # 512x384
 }
+
+
+def extract_texture(image, image_format):
+    """
+    Load image into bytes buffer, convert to texture data
+    """
+    data = BytesIO()
+    image.save(data, format=image_format)
+    data.seek(0)
+    return CoreImage(BytesIO(data.read()), ext=image_format).texture
+
+
+def load_images():
+    global base_dir, images, themes
+    card_back = extract_texture(PilImage.open("assets/weapon_case.png"), 'png')
+
+    for theme in themes:
+        folder = os.path.join(base_dir, theme)
+        textures = [card_back]
+
+        for index in range((n_rows * n_cols) // 2):
+            try:
+                image = PilImage.open(f"{folder}/{index + 1}.png")
+                image_format = 'png'
+            except FileNotFoundError:
+                image = PilImage.open(f"{folder}/{index + 1}.jpg")
+                image_format = 'jpeg'
+
+            texture = extract_texture(image, image_format)
+            textures.append(texture)
+
+        images[theme] = textures
+
+
+async def safe_sleep(n):
+    """
+    Sleep for `n` seconds without blocking the main event loop
+    """
+    await ak.sleep(n)
+
+
+class ItemConfirm(OneLineAvatarIconListItem):
+    divider = None
+
+    def set_icon(self, checkbox):
+        print(self.text)
+        checkbox.active = True
+        check_list = checkbox.get_widgets(checkbox.group)
+        for check in check_list:
+            if check != checkbox:
+                check.active = False
 
 
 class Card(Widget):
     index = BoundedNumericProperty(0, min=0, max=18)
     theme = StringProperty(None)
     texture = ObjectProperty(None)
+    endpoints = ListProperty([])
 
-    def __init__(self, index, theme='acg', **kwargs):
+    def __init__(self, index, theme='guns', **kwargs):
         super().__init__(**kwargs)
         self.index = index  # index of the image to be rendered, or 0 (card back)
         self.theme = theme
-        self.update()
-
-    def update(self):
-        # load card image from disk
-        if self.index == 0:
-            image = PilImage.open("assets/card_back.jpg")
-            image_format = 'jpg'
-        else:
-            try:
-                image = PilImage.open(f"assets/{self.theme}/{self.index}.png")
-                image_format = 'png'
-            except FileNotFoundError:
-                image = PilImage.open(f"assets/{self.theme}/{self.index}.jpg")
-                image_format = 'jpg'
-
-        # load image into bytes buffer, render as texture
-        data = BytesIO()
-        image.save(data, format=image_format)
-        data.seek(0)
-        im = CoreImage(BytesIO(data.read()), ext=image_format)
-        self.texture = im.texture
+        self.texture = images[self.theme][self.index]  # load card image from memory, render as texture
+        self.endpoints = [
+            self.pos[0] - card_padding, self.pos[1] - card_padding,
+            self.pos[0] - card_padding, self.pos[1] + card_padding + self.size[1],
+            self.pos[0] + card_padding + self.size[0], self.pos[1] + card_padding + self.size[1],
+            self.pos[0] + card_padding + self.size[0], self.pos[1] - card_padding,
+            self.pos[0] - card_padding, self.pos[1] - card_padding
+        ]
 
 
 class Board(Widget):
+    # define properties that can be accessed from the .kv file
     rows = NumericProperty(0)
     cols = NumericProperty(0)
+
+    card_width = NumericProperty(0)
+    card_height = NumericProperty(0)
+
     theme = StringProperty(None)
+    flips = NumericProperty(0)
+    time_label = StringProperty('00:00:00')
 
     popup1 = ObjectProperty(None)
     popup2 = ObjectProperty(None)
 
     time_elapsed = NumericProperty(0)
-    best_record = NumericProperty(0)
+    best_record = NumericProperty(9999)
 
     state = OptionProperty(0,  # initial state
                            options=[
                                0,  # all cards flipped are matched, wait for a new card to be flipped
-                               1   # there's one flipped card to be matched, try to flip a card
+                               1  # there's one flipped card to be matched, try to flip a card
                            ])
-
-    last_clicked = ObjectProperty(None)  # the flipped card that waits to be matched
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.rows = 6
-        self.cols = 6
+        self.rows = n_rows
+        self.cols = n_cols
         self.theme = None
         self.cards = None  # 2D numpy array of card objects
         self.index = None  # 2D numpy array of card indices (index 0 is the card back)
 
         self.state = 0
         self.flips = 0  # total number of flips
-        self.last_clicked = None
         self.time_elapsed = 0
+
+        self.last_clicked = None  # the flipped card that waits to be matched
+        self.mouse_disabled = False  # disable mouse clicks while a click is being handled
+
         self.reset()
 
-        Clock.schedule_interval(self.tick, 1)
+        Clock.schedule_interval(self.tick, 1)  # count time
 
-    def tick(self):
+    def tick(self, interval):
         self.time_elapsed += 1
+        self.time_label = self.format_time()
 
     def format_time(self):
-        # copy from stopwatch example
         hour = self.time_elapsed // 3600
         minute, second = map(int, divmod(self.time_elapsed, 60))
-        return f'[{hour}]:[{minute}]:[{second}]'
+        return f'{hour:02d}:{minute:02d}:{second:02d}'
 
     def walk_cards(self):
         for row in range(self.rows):
@@ -144,27 +219,45 @@ class Board(Widget):
         """
         Compute the card widget position based on the row and col number.
         """
-        return [border_size + card_width * y,
-                border_size + card_width * (self.rows - 1 - x)]
+        return [border_size + self.card_width * y + card_padding,
+                border_size + self.card_height * (self.rows - 1 - x) + card_padding]
 
     def card_row_col(self, pos):
         """
         Compute the card (row, col) number based on the position coordinates.
         This is the inverse function of self.card_pos().
         """
-        return [self.rows - 1 - (pos[1] - border_size) // card_width,
-                (pos[0] - border_size) // card_width]
+        return [self.rows - 1 - (pos[1] - border_size - card_padding) // self.card_height,
+                (pos[0] - border_size - card_padding) // self.card_width]
 
-    def reset(self, theme='acg'):
+    def reset(self, theme='guns'):
+        # [bug fixed]: disable `new game` button while animation is still in progress
+        if self.mouse_disabled:
+            return
+
         self.theme = theme
-        Window.size = (920, 920 * aspect_ratio[self.theme] + 200)
+        self.card_width = fixed_width
+        self.card_height = int(fixed_width * aspect_ratio[self.theme])
+
+        Window.size = (self.cols * self.card_width + 2 * border_size,
+                       self.rows * self.card_height + 2 * border_size + 70)
+
+        self.cards = np.zeros((self.rows, self.cols), dtype=object)
+        self.canvas.clear()
+
+        # clean up old card widgets if any
+        for x, y in self.walk_cards():
+            if self.cards[x, y] is not None:
+                self.remove_widget(self.cards[x, y])
 
         # display the card back in each cell
-        self.cards = np.zeros((self.rows, self.cols), dtype=object)
-        for x, y in self.walk_tiles():
+        for x, y in self.walk_cards():
             position = self.card_pos(x, y)
-            card_height = card_width * aspect_ratio[self.theme]
-            self.cards[x, y] = Card(0, pos=position, size=(card_width, card_height))
+            self.cards[x, y] = Card(
+                index=0, theme=self.theme, pos=position,
+                size=(self.card_width - 2 * card_padding,
+                      self.card_height - 2 * card_padding)
+            )
             self.add_widget(self.cards[x, y])
 
         # shuffle the deck
@@ -176,65 +269,64 @@ class Board(Widget):
         # reset game state and statistics
         self.flips = 0
         self.state = 0
-        self.last_clicked = None
         self.time_elapsed = 0
+        self.last_clicked = None
+        self.mouse_disabled = False
 
-    def change_theme(self):
-        if not self.popup1:
-            self.popup1 = MDDialog(
-                title="Current Moves",
-                text=text,
-                radius=[20, 20, 20, 20],
-                size_hint=(0.7, None),
-                buttons=[
-                    MDFlatButton(
-                        text="BACK",
-                        font_name='Lato',
-                        font_size="16sp",
-                        text_color=(0, 153/255, 1, 1)
-                    )
-                ]
-            )
-        self.popup1.open()
-
-    def congratulate(self):
-        if self.time_elapsed < self.best_record:
-            self.best_record = self.time_elapsed
-
-        if not self.popup2:
-            self.popup2 = MDDialog(
-                title="You won!",
-                text="time elapsed: " + self.format_time(),
-                radius=[20, 20, 20, 20],
-                size_hint=(0.7, None),
-                buttons=[
-                    MDFlatButton(
-                        text="OK", text_color=(0, 153/255, 1, 1)
-                    )
-                ]
-            )
-        self.popup2.open()
-
-    def flip(self, card):
+    async def flip_one(self, card, event):
+        """
+        Given an idle event, flip the card and wait for the animation to finish.
+        Once done, activate the event so that the caller can safely continue execution.
+        ------------------------------------------------------------------------------
+        To flip a list of cards in sequence, call flip_one() one by one.
+        To flip a list of cards all at once, use the concurrent version flip_all().
+        """
         x, y = self.card_row_col(card.pos)
         new_index = self.index[x, y] if card.index == 0 else 0
 
+        # create the new card widget which is initially transparent
         flipped = Card(index=new_index, theme=self.theme,
-                       pos=card.pos, size=card.size)
+                       pos=card.pos, size=card.size, opacity=0.5)
 
-        self.remove_widget(card)
-        self.add_widget(flipped)
         self.cards[x, y] = flipped
 
-        anim = Animation(pos=self.cell_pos(x, y),
-                             duration=0.25, transition='linear')
-        if not self.moving:
-            anim.on_complete = flipped
-            self.moving = True
-        anim.start(card)
+        # animate the old card opacity from 1 to 0, wait until finish, then remove the old card widget
+        await ak.animate(card, opacity=0.5, duration=0.25, transition='in_out_sine')
+        self.remove_widget(card)
 
-    def on_touch_up(self, touch):
-        # disable when in state 2
+        # add the new card widget (which is transparent)
+        self.add_widget(flipped)
+
+        # animate the new card opacity from 0 to 1, wait until finish, then set it to opaque
+        await ak.animate(flipped, opacity=1, duration=0.25, transition='in_out_sine')
+        self.cards[x, y].opacity = 1
+
+        event.set()  # animation complete, notify the caller who is waiting for the event
+
+    async def flip_all(self, cards, event):
+        """
+        Given an idle event, flip a list of cards all at once and wait until all finish.
+        Once done, activate the event so that the caller can safely continue execution.
+        ------------------------------------------------------------------------------
+        This is the concurrent version of flip_one(), animations play simultaneously.
+        Each card is tracked by a unique child event to eliminate possible race conditions.
+        """
+        child_events = []
+        # start asynchronous calls
+        for card in cards:
+            child_event = ak.Event()
+            child_events.append(child_event)
+            ak.start(self.flip_one(card, child_event))
+
+        # wait until all events join
+        for child_event in child_events:
+            await child_event.wait()
+
+        event.set()  # all animations complete, notify the caller who is waiting for the event
+
+    async def click(self, touch):
+        # disable mouse clicks until the function returns
+        self.mouse_disabled = True
 
         # determine which card is clicked on
         row = -1
@@ -243,18 +335,20 @@ class Board(Widget):
 
         for x, y in self.walk_cards():
             card = self.cards[x, y]
-            if card.collide_points(touch.x, touch.y):
+            if card.collide_point(touch.x, touch.y):
                 row = x
                 col = y
                 clicked_card = card
                 break
 
-        # mouse click out of board, do nothing
+        # mouse click outside the board, do nothing
         if clicked_card is None:
+            self.mouse_disabled = False
             return
 
         # clicked card is already exposed, do nothing
         if clicked_card.index > 0:
+            self.mouse_disabled = False
             return
 
         # otherwise, flip it and update board status
@@ -263,28 +357,132 @@ class Board(Widget):
 
             # the 1st card is clicked on
             if self.state == 0:
-                self.flip(clicked_card)  # on flipped, the clicked card has been replaced so no longer useful
-                self.last_clicked = self.cards[row, col]  # the newly flipped card, not the clicked card
+                event = ak.Event()
+                coroutine = self.flip_one(clicked_card, event)
+                ak.start(coroutine)
+                await event.wait()
+                print('1st card flipped')
+
+                self.last_clicked = self.cards[row, col]  # after flip, the card back no longer exists
                 self.state = 1
 
-            # the 2nd card is flipped
+            # the 2nd card is clicked on
             else:
-                self.flip(clicked_card)
+                event = ak.Event()
+                coroutine = self.flip_one(clicked_card, event)
+                ak.start(coroutine)
+                await event.wait()
+                print('2nd card flipped')
 
-                # if matched, reset the board to state 0 immediately
+                # if matched, reset the board to state 0, check win conditions
                 if self.last_clicked.index == self.cards[row, col].index:
                     self.last_clicked = None
                     self.state = 0
 
+                    is_win = True
+                    for x, y in self.walk_cards():
+                        if self.cards[x, y].index == 0:
+                            is_win = False
+                            break
+
+                    if is_win:
+                        self.congratulate()
+                        self.reset(self.theme)
+
                 # if mismatched, flip both cards back after 2 seconds, then reset to state 0
                 else:
-                    # refrain from using time.sleep(2), otherwise the UI main event loop will be blocked
-                    Clock.schedule_once(lambda dt: ..., 2)  # simply use a callback that does nothing
-                    self.flip(self.last_clicked)
-                    self.flip(self.cards[row, col])
+                    await safe_sleep(0.5)
+
+                    event = ak.Event()
+                    cards = [self.last_clicked, self.cards[row, col]]
+                    coroutine = self.flip_all(cards, event)
+                    ak.start(coroutine)
+                    await event.wait()
+                    print('both cards are hidden')
 
                     self.last_clicked = None
                     self.state = 0
+
+        self.mouse_disabled = False
+
+    def on_touch_up(self, touch):
+        if self.mouse_disabled:
+            return
+        coroutine = self.click(touch)
+        ak.start(coroutine)
+
+    def close_dialog(self, *args):
+        if self.popup1:
+            self.popup1.dismiss()
+        if self.popup2:
+            self.popup2.dismiss()
+        self.mouse_disabled = False
+
+    def change_theme(self, *args):
+        for item in self.popup1.items:
+            if item.ids.check.active:
+                self.theme = item.text
+                break
+        self.close_dialog(*args)
+        self.reset(self.theme)
+
+    def choose_theme(self):
+        # [bug fixed]: disable `set theme` button while animation is still in progress
+        if self.mouse_disabled:
+            return
+
+        # [bug fixed]: disable all main UI events until the dialog is closed
+        self.mouse_disabled = True
+
+        if not self.popup1:
+            button_style = dict(font_name='Lato',
+                                font_size="16sp",
+                                text_color=(0, 153 / 255, 1, 1))
+
+            button1 = MDFlatButton(text="RESTART", **button_style)
+            button2 = MDFlatButton(text="CANCEL", **button_style)
+
+            button1.bind(on_release=self.change_theme)
+            button2.bind(on_release=self.close_dialog)
+
+            self.popup1 = MDDialog(
+                title="Themes",
+                type="confirmation",
+                items=[
+                    ItemConfirm(text="guns"),
+                    ItemConfirm(text="knives")
+                ],
+                size_hint=(0.3, None),
+                auto_dismiss=False,
+                buttons=[button1, button2]
+            )
+        self.popup1.open()
+
+    def congratulate(self):
+        if self.time_elapsed < self.best_record:
+            self.best_record = self.time_elapsed
+
+        text = f'Total time used: {self.format_time()}, ' \
+               f'total clicks: {self.flips}, ' \
+               f'best record: {self.best_record}.'
+
+        button_style = dict(font_name='Lato',
+                            font_size="16sp",
+                            text_color=(0, 153 / 255, 1, 1))
+
+        button = MDFlatButton(text="OK", **button_style)
+        button.bind(on_release=self.close_dialog)
+
+        # create a new dialog with new statistics each time
+        self.popup2 = MDDialog(
+            title="Congratulations, You Won!",
+            text=text,
+            radius=[20, 20, 20, 20],
+            size_hint=(0.7, None),
+            auto_dismiss=False,
+            buttons=[button]
+        )
+        self.popup2.open()
 
 
 class Root(BoxLayout):
@@ -303,11 +501,15 @@ class Game(MDApp):
 
 
 if __name__ == '__main__':
+    load_images()
+
     from kivy.config import Config
+
     Config.set('input', 'mouse', 'mouse, disable_multitouch')  # must be called before importing Window
 
     from kivy.core.window import Window
-    Window.size = (920, 1100)
+
+    Window.size = (980, 810)
     Window.clearcolor = get_color_from_hex('#BCADA1')
 
     Builder.load_file('memory.kv')

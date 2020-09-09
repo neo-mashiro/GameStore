@@ -12,6 +12,18 @@ It might be a nice attempt to deploy kivy apps online and render them in a web b
 
 
 
+**List of games:**
+
+As a benchmark of implementation complexity for beginners, I have rated each game with a number of stars, this is after all my personal sense so should be taken with a grain of salt. For some games like 15 puzzle, UI development is simple but game logic is hard. For some games like Memory, the game logic is easy but the animation and coroutine is hard.
+
+- ★☆☆☆☆ [Stopwatch](#stopwatch)
+- ★★☆☆☆ [Pong](#pong)
+- ★★★★☆ [2048](#2048)
+- ★★★★☆ [15 puzzle](#15-puzzle)
+- ★★★★★ [Memory](#memory)
+
+
+
 
 
 ## Stopwatch
@@ -101,6 +113,10 @@ A nice game that tests your short-term memory.
 __Game Logic:__
 
 ...
+
+use the `asynckivy` library to handle concurrency, post code here.
+
+
 
 
 
