@@ -18,22 +18,22 @@ Specification:
 
 Things to note:
 
-- A standard kivy application supports only 1 thread (the main thread)
-- Window size and card size must be dynamically adjusted for different themes (different aspect ratios)
-- In kivy, execution does not wait for animation to finish, but will continue immediately
-- To wait for an event, use `Clock.schedule_interval()` together with a callback function
-- Test carefully with logging messages to eliminate any possible race conditions
+- A standard kivy application has only 1 main thread, the result of using more threads can be unexpected
+- Window size and card size must be dynamically adjusted for themes with different aspect ratios
+- In kivy, animation is asynchronous so execution does not wait for it to finish but will continue
 - Refrain from using `time.sleep()`, this will block the main event loop and freeze the window
-- For complicated concurrency issues, use the `asynckivy` library instead of `asyncio` or `threading`
-new library recently released on July, 25, 2020
 
+- To schedule an event, use `Clock.schedule_interval(callback, 1/60)` together with a callback function
+- The scheduled event will be automatically unscheduled as soon as the callback returns False
+- Typically, callbacks do not accept extra arguments since they are referenced only by names
+- To work with additional arguments, wrap it with a partial function when you bind to it
+- An alternative is to use a lambda function if the callback code fits on one line
 
-
-        The callback function to be scheduled by `Clock.schedule_interval(callback, 1/60)`.
-        The scheduled event will be automatically unscheduled as soon as this callback returns False.
-        Typically, callbacks do not accept extra arguments since they are referenced only by names.
-        To work with additional arguments, wrap it with a partial function when you bind to it.
-        An alternative is to use a lambda function if the callback code fits on one line.
+- Everything including scheduled events are always asynchronous so that concurrency could be tricky
+- Test carefully with logging messages to eliminate any possible race conditions (e.g. fast mouse clicks)
+- There's no way to make a call equivalent to `time.sleep()` in kivy, other modules are required
+- To implement custom concurrency behaviors, use the `asynckivy` module (recently released in July 2020)
+- Keep in mind that the `asyncio`, threading` and `subprocess` may not work properly in kivy
 
 """
 
@@ -56,16 +56,13 @@ from kivy.properties import (
     NumericProperty, ObjectProperty, StringProperty,
     OptionProperty, BoundedNumericProperty, ListProperty
 )
-
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.widget import Widget
 from kivy.utils import get_color_from_hex
-
 from kivymd.app import MDApp
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
-from kivymd.uix.list import OneLineAvatarIconListItem, ILeftBodyTouch
-from kivymd.uix.selectioncontrol import MDCheckbox
+from kivymd.uix.list import OneLineAvatarIconListItem, CheckboxRightWidget
 
 ##################################################################
 # global configuration variables
@@ -83,7 +80,7 @@ themes = ['guns', 'knives']
 
 aspect_ratio = {
     'guns': 0.75,    # 512x384
-    'knives': 0.75,  # 512x384
+    'knives': 0.75   # 512x384
 }
 
 
@@ -98,6 +95,9 @@ def extract_texture(image, image_format):
 
 
 def load_images():
+    """
+    On startup, load all image assets into memory to boost up game performance
+    """
     global base_dir, images, themes
     card_back = extract_texture(PilImage.open("assets/weapon_case.png"), 'png')
 
@@ -121,16 +121,33 @@ def load_images():
 
 async def safe_sleep(n):
     """
-    Sleep for `n` seconds without blocking the main event loop
+    Sleep for n seconds without blocking the main event loop.
+    This is the only working substitute for `time.sleep(n)`.
     """
     await ak.sleep(n)
 
 
-class ItemConfirm(OneLineAvatarIconListItem):
+class ThemeItem(OneLineAvatarIconListItem):
+    """
+    Each instance of this class represents a row item in the popup dialog window
+    """
     divider = None
 
-    def set_icon(self, checkbox):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._checkbox = CheckboxRightWidget(group="check")
+        self.add_widget(self.checkbox)
+
+    @property
+    def checkbox(self):
+        return self._checkbox
+
+    def on_release(self):
+        self.check(self.checkbox)
+
+    def check(self, checkbox):
         print(self.text)
+        # check the current checkbox and uncheck others
         checkbox.active = True
         check_list = checkbox.get_widgets(checkbox.group)
         for check in check_list:
@@ -142,7 +159,7 @@ class Card(Widget):
     index = BoundedNumericProperty(0, min=0, max=18)
     theme = StringProperty(None)
     texture = ObjectProperty(None)
-    endpoints = ListProperty([])
+    endpoints = ListProperty([])  # list of points used to draw the card borders in .kv
 
     def __init__(self, index, theme='guns', **kwargs):
         super().__init__(**kwargs)
@@ -150,11 +167,11 @@ class Card(Widget):
         self.theme = theme
         self.texture = images[self.theme][self.index]  # load card image from memory, render as texture
         self.endpoints = [
-            self.pos[0] - card_padding, self.pos[1] - card_padding,
+            self.pos[0] - card_padding, self.pos[1] - card_padding,  # the start point
             self.pos[0] - card_padding, self.pos[1] + card_padding + self.size[1],
             self.pos[0] + card_padding + self.size[0], self.pos[1] + card_padding + self.size[1],
             self.pos[0] + card_padding + self.size[0], self.pos[1] - card_padding,
-            self.pos[0] - card_padding, self.pos[1] - card_padding
+            self.pos[0] - card_padding, self.pos[1] - card_padding   # return to the start point
         ]
 
 
@@ -179,7 +196,7 @@ class Board(Widget):
     state = OptionProperty(0,  # initial state
                            options=[
                                0,  # all cards flipped are matched, wait for a new card to be flipped
-                               1  # there's one flipped card to be matched, try to flip a card
+                               1   # there's one flipped card to be matched, try to flip a card
                            ])
 
     def __init__(self, **kwargs):
@@ -195,7 +212,7 @@ class Board(Widget):
         self.time_elapsed = 0
 
         self.last_clicked = None  # the flipped card that waits to be matched
-        self.mouse_disabled = False  # disable mouse clicks while a click is being handled
+        self.mouse_disabled = False  # disable mouse clicks while events are being handled
 
         self.reset()
 
@@ -211,6 +228,9 @@ class Board(Widget):
         return f'{hour:02d}:{minute:02d}:{second:02d}'
 
     def walk_cards(self):
+        """
+        The generator function to iterate over cards on the board.
+        """
         for row in range(self.rows):
             for col in range(self.cols):
                 yield (row, col)
@@ -243,7 +263,7 @@ class Board(Widget):
                        self.rows * self.card_height + 2 * border_size + 70)
 
         self.cards = np.zeros((self.rows, self.cols), dtype=object)
-        self.canvas.clear()
+        self.canvas.clear()  # important!
 
         # clean up old card widgets if any
         for x, y in self.walk_cards():
@@ -290,14 +310,14 @@ class Board(Widget):
 
         self.cards[x, y] = flipped
 
-        # animate the old card opacity from 1 to 0, wait until finish, then remove the old card widget
+        # animate the old card opacity from 1 to 0.5, wait until finish, then remove the old card widget
         await ak.animate(card, opacity=0.5, duration=0.25, transition='in_out_sine')
         self.remove_widget(card)
 
         # add the new card widget (which is transparent)
         self.add_widget(flipped)
 
-        # animate the new card opacity from 0 to 1, wait until finish, then set it to opaque
+        # animate the new card opacity from 0.5 to 1, wait until finish, then set it to opaque
         await ak.animate(flipped, opacity=1, duration=0.25, transition='in_out_sine')
         self.cards[x, y].opacity = 1
 
@@ -420,7 +440,7 @@ class Board(Widget):
 
     def change_theme(self, *args):
         for item in self.popup1.items:
-            if item.ids.check.active:
+            if item.checkbox.active:
                 self.theme = item.text
                 break
         self.close_dialog(*args)
@@ -449,8 +469,8 @@ class Board(Widget):
                 title="Themes",
                 type="confirmation",
                 items=[
-                    ItemConfirm(text="guns"),
-                    ItemConfirm(text="knives")
+                    ThemeItem(text="guns"),
+                    ThemeItem(text="knives")
                 ],
                 size_hint=(0.3, None),
                 auto_dismiss=False,
@@ -504,11 +524,9 @@ if __name__ == '__main__':
     load_images()
 
     from kivy.config import Config
-
     Config.set('input', 'mouse', 'mouse, disable_multitouch')  # must be called before importing Window
 
     from kivy.core.window import Window
-
     Window.size = (980, 810)
     Window.clearcolor = get_color_from_hex('#BCADA1')
 

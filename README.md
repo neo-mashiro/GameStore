@@ -11,16 +11,17 @@ _Write once, run away._
 It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the technical work is anything but a non-trivial task, I believe I would be better off using web applications framework instead.
 
 
+## List of games
 
-**List of games:**
+As a benchmark of implementation complexity, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of how hard it is to build the user interface.
 
-As a benchmark of implementation complexity for beginners, I have rated each game with a number of stars, this is after all my personal sense so should be taken with a grain of salt. For some games like 15 puzzle, UI development is simple but game logic is hard. For some games like Memory, the game logic is easy but the animation and coroutine is hard.
+For example, strategy to build a **15 puzzle** solver is hard, but the UI development is trivial. **Asteroids** UI looks fancy, but all objects are moving asynchronously so it's easy as well. In contrast, the **Memory** game has nothing fancy in it, both the logic and UI design looks simple at first glance. However, it turns out to be quite hard as soon as you start coding, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not as easy to handle animation coroutines and concurrency as appropriate, especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
 
-- ★☆☆☆☆ [Stopwatch](#stopwatch)
-- ★★☆☆☆ [Pong](#pong)
-- ★★★★☆ [2048](#2048)
-- ★★★★☆ [15 puzzle](#15-puzzle)
-- ★★★★★ [Memory](#memory)
+★☆☆☆☆ [Stopwatch](#stopwatch)
+★★☆☆☆ [Pong](#pong)
+★★★★☆ [2048](#2048)
+★★★★☆ [15 puzzle](#15-puzzle)
+★★★★★ [Memory](#memory)
 
 
 
