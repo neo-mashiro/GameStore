@@ -17,11 +17,11 @@ As a benchmark of implementation complexity, I have rated each game with stars, 
 
 For example, strategy to build a **15 puzzle** solver is hard, but the UI development is trivial. **Asteroids** UI looks fancy, but all objects are moving asynchronously so it's easy as well. In contrast, the **Memory** game has nothing fancy in it, both the logic and UI design looks simple at first glance. However, it turns out to be quite hard as soon as you start coding, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not as easy to handle animation coroutines and concurrency as appropriate, especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
 
-★☆☆☆☆ [Stopwatch](#stopwatch)
-★★☆☆☆ [Pong](#pong)
-★★★★☆ [2048](#2048)
-★★★★☆ [15 puzzle](#15-puzzle)
-★★★★★ [Memory](#memory)
+★☆☆☆☆ [Stopwatch](#stopwatch)  
+★★☆☆☆ [Pong](#pong)  
+★★★★☆ [2048](#2048)  
+★★★★☆ [15 puzzle  ](#15-puzzle)  
+★★★★★ [Memory](#memory)  
 
 
 
@@ -109,28 +109,112 @@ __P.S.__ I guess Github has a limit on frame rate ~ 20 fps so the GIF is not ren
 
 ## Memory
 
-A nice game that tests your short-term memory.
+A nice matching game that tests your short-term memory.
 
 __Game Logic:__
 
-...
+The objective of this game is to match all cards on the board. The board has 36 cells, comprised of 18 pairs of cards, face down in random order. The player turns over two cards at a time, with the goal of turning over a matching pair, by using his memory. A matched pair will stay visible on board, a mismatched pair will be turned back 0.5 seconds after they are turned over.
 
-use the `asynckivy` library to handle concurrency, post code here.
+Here I'm using images of weapons from the [CSGO](https://store.steampowered.com/app/730/CounterStrike_Global_Offensive/) inventory to simulate case opening, just for fun. Of course, there's no way I can afford these rare items with real dollars.
 
-sss
+![image](assets/memory1.png)
+
+![image](assets/memory2.png)
 
 
 
-credit:
+The complexity of this game mainly comes from concurrency issues, most of which stem from the animation effects (also the popup dialog window). In brief, card animation is achieved by animating the image texture opacity, first from 1 to 0, then change texture (flip the card), then from 0 to 1, so as to visually create a fade effect. Without animation effects, it would be a lot easier to implement.
 
-https://csgostash.com/
+```python
+# To flip a list of cards in sequence, call flip_one() one by one.
+# To flip a list of cards all at once, use the concurrent version flip_all().
 
-https://august-soft.com/
+async def flip_one(self, card, event):
+    x, y = self.card_row_col(card.pos)
+    new_index = self.index[x, y] if card.index == 0 else 0
 
-https://gochiusa.com
+    # create the new card widget which is initially transparent
+    flipped = Card(index=new_index, theme=self.theme,
+                   pos=card.pos, size=card.size, opacity=0.5)
 
-the permission of using these banner and twitter icons have been granted
+    self.cards[x, y] = flipped
 
+    # animate the old card opacity from 1 to 0.5, wait until finish, then remove the old card widget
+    await ak.animate(card, opacity=0.5, duration=0.25, transition='in_out_sine')
+    self.remove_widget(card)
+
+    # add the new card widget (which is transparent)
+    self.add_widget(flipped)
+
+    # animate the new card opacity from 0.5 to 1, wait until finish, then set it to opaque
+    await ak.animate(flipped, opacity=1, duration=0.25, transition='in_out_sine')
+    self.cards[x, y].opacity = 1
+
+    event.set()  # animation complete, notify the caller who is waiting for the event
+
+async def flip_all(self, cards, event):
+    child_events = []
+    # start asynchronous calls
+    for card in cards:
+        child_event = ak.Event()  # each card has a child event to avoid race conditions
+        child_events.append(child_event)
+        ak.start(self.flip_one(card, child_event))
+
+    # wait until all events join
+    for child_event in child_events:
+        await child_event.wait()
+
+    event.set()  # all animations complete, notify the caller who is waiting for the event
+```
+
+Given that every call in kivy is asynchronous, execution does not wait for animations to finish but will continue immediately, leaving a vulnerable time window when many things could happen at the same time. Besides, a mismatched pair of cards need to stay visible on board (sleep) for a while before they are turned back, so that players can have enough time to remember them. To handle these issues properly, my implementation uses `asynckivy` which is a new module recently released in July 2020.
+
+<details>
+<summary>Detailed specifications</summary>
+
+- Make a 6x6 board with some cute icons (36/2 = 18 icons)
+- Create a button above the board that selects the theme, each features a different set of 18 icons
+- When the button is clicked, pop up a dropdown list or alike that lets the user choose a theme
+- Add another button that restarts the game without changing the theme
+- Choose a back side image for all themes, laid over by a border image
+
+- Add animation effects when the card is flipped on the board
+- If the second card flipped does not match, let them stay onboard for 2 seconds before flipping back
+- When a click is being handled, disable mouse clicks until the handler returns
+
+- Keep track of time elapsed in seconds in a text label
+- Keep track of total number of flips that have been made
+- Keep track of the best record (shortest time) the player has achieved
+- If all cards are matched, the user wins, pop up a dialog window saying congrats and display score (time)
+</details>
+
+<details>
+<summary>Implementation caveats</summary>
+
+- Window size and card size must be dynamically adjusted for themes with different aspect ratios
+- Refrain from using `time.sleep()`, this will block the main event loop and freeze the window
+- To schedule an event, use `Clock.schedule_interval()` together with a callback function
+- The scheduled event will be automatically unscheduled as soon as the callback returns False
+- Typically, callbacks do not accept extra arguments since they are referenced only by names
+- To work with additional arguments, wrap it with a partial function when you bind to it
+- Everything including scheduled events are asynchronous so that concurrency could be tricky
+
+- Test carefully with logging messages to eliminate any possible race conditions (e.g. fast mouse clicks)
+- There's no way to make a call equivalent to `time.sleep()` in kivy, other modules are required
+- To implement custom concurrency behaviors, use the newly released `asynckivy` module
+- Keep in mind that the `asyncio`, `threading` and `subprocess` may not work properly in kivy
+</details>
+
+### A small demo
+
+
+![image](assets/memory_demo.gif)
+
+
+
+
+
+....
 
 
 Pyinstaller / Nuitka: package to .exe
