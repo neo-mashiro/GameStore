@@ -1,0 +1,49 @@
+<Label>:
+    font_name: 'OpenSans'
+    font_size: 50
+    markup: True
+
+<CuteButton@Button>:
+    font_name: 'OpenSans'
+    font_size: 25
+
+<Root>:
+    orientation: 'vertical'
+
+    Label:
+        id: clock
+        font_size: 60
+        text: '[color=#d279ff]Clock[/color]: [b]00[/b]:00:00'
+
+    BoxLayout:
+        orientation: 'horizontal'
+        height: 100
+        padding: 100, 10, 100, 10  # left-top-right-bottom
+        spacing: 50
+        size_hint: (1, None)
+
+        CuteButton:
+            text: 'stop' if root.stopwatch_started else 'start'
+            background_color: 0, 1, 0, 1
+            on_press: root.press()
+
+        CuteButton:
+            text: 'reset'
+            on_press:
+                root.stopwatch_started = False
+                root.stopwatch_seconds = 0
+                score.text = '[color=#ff6600]score [/color][sup][size=40]0[/size][/sup]/[size=40]0[/size]'
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 70, 0, 70, 10
+        spacing: 0
+
+        Label:
+            id: stopwatch
+            text: '00:00.[color=#ff0000]0[/color]'
+
+        Label:
+            id: score
+            text: '[color=#ff6600]score [/color][sup][size=40]0[/size][/sup]/[size=40]0[/size]'
+
