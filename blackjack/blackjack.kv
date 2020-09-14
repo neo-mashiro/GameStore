@@ -1,0 +1,127 @@
+<Label>:
+    font_name: 'perpeta'  # perpeta
+    font_size: 25
+    color: 1, 1, 1, 1
+    markup: True
+
+<MyButton@MDRectangleFlatButton>:
+    font_name: 'OpenSans'
+    font_size: 15
+    pos_hint: {"center_y": 0.55}
+    text_color: 0, 0, 0, 1
+    md_bg_color: 0/255, 138/255, 230/255, 1
+
+<Card>:
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            texture: self.texture
+
+<Root>:
+    orientation: 'vertical'
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "../assets/card_board.jpg"
+
+    Label:
+        text: "Welcome to BlackJack!"
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 0, 20, 190, 0  # left-top-right-bottom
+        spacing: 30
+        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+
+        Image:
+            source: '../assets/dice.png'
+
+        Label:
+            text: "score: 0"
+
+        Image:
+            source: '../assets/hand.png'
+
+    Label:
+        text: root.outcome
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 0, 20, 190, 0  # left-top-right-bottom
+        spacing: 30
+        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+
+        Label:
+            pos_hint: {"center_y": 0.5}
+            text: 'Dealer'
+
+        GridLayout:
+            rows: 1
+            cols: 7
+            spacing: 10
+
+            Card:
+                id: d1
+            Card:
+                id: d2
+            Card:
+                id: d3
+            Card:
+                id: d4
+            Card:
+                id: d5
+            Card:
+                id: d6
+            Card:
+                id: d7
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 0, 20, 190, 0  # left-top-right-bottom
+        spacing: 30
+        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+
+        MyButton:
+            text: 'Deal'
+            on_press: root.deal(board.theme)
+
+        MyButton:
+            text: 'Hit'
+            on_press: root.hit()
+
+        MyButton:
+            text: 'Stand'
+            on_press: root.stand()
+
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: 0, 20, 190, 0  # left-top-right-bottom
+        spacing: 30
+        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+
+        Label:
+            pos_hint: {"center_y": 0.5}
+            text: 'Player'
+
+        GridLayout:
+            rows: 1
+            cols: 7
+            spacing: 10
+
+            Card:
+                id: p1
+            Card:
+                id: p2
+            Card:
+                id: p3
+            Card:
+                id: p4
+            Card:
+                id: p5
+            Card:
+                id: p6
+            Card:
+                id: p7

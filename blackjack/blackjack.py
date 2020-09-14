@@ -1,202 +1,243 @@
-# Mini-project #6 - Blackjack
+"""
+number card has value equal to the number
+face card (K, Q, J) has value 10
+Ace has value 1 or 11 (player's choice)
 
-import simplegui
+
+
+"""
+import asynckivy as ak
+import numpy as np
+import os
 import random
+import time
 
-# load card sprite - 936x384 - source: jfitz.com
-CARD_SIZE = (72, 96)
-CARD_CENTER = (36, 48)
-card_images = simplegui.load_image("http://storage.googleapis.com/codeskulptor-assets/cards_jfitz.png")
+from functools import partial
+from io import BytesIO
+from PIL import Image as PilImage
 
-CARD_BACK_SIZE = (72, 96)
-CARD_BACK_CENTER = (36, 48)
-card_back = simplegui.load_image("http://storage.googleapis.com/codeskulptor-assets/card_jfitz_back.png")    
+from kivy.animation import Animation
+from kivy.clock import Clock
+from kivy.core.image import Image as CoreImage
+from kivy.core.text import LabelBase
+from kivy.lang import Builder
+from kivy.properties import (
+    NumericProperty, ObjectProperty, StringProperty,
+    OptionProperty, BoundedNumericProperty, ListProperty
+)
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.widget import Widget
+from kivy.utils import get_color_from_hex
+from kivymd.app import MDApp
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.list import OneLineAvatarIconListItem, CheckboxRightWidget
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.widget import Widget
 
-# initialize some useful global variables
-in_play = False
-outcome = ""
-score = 0
-player_hand = []
-dealer_hand = []
 
 # define globals for cards
-SUITS = ('C', 'S', 'H', 'D')  # club, spade, heart, diamond
-RANKS = ('A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K')
-VALUES = {'A':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, 'T':10, 'J':10, 'Q':10, 'K':10}
+card_width = 390
+card_height = 606
+
+suits = ['C', 'S', 'H', 'D']  # club, spade, heart, diamond
+ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
+index = {'A': 0, '2': 1, '3': 2, '4': 3, '5': 4, '6': 5, '7': 6, '8': 7, '9': 8, 'T': 9, 'J': 10, 'Q': 11, 'K': 12}
+value = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 10, 'Q': 10, 'K': 10}
+
+images = {
+    'D': [],   # list of image texture objects
+    'C': [],
+    'H': [],
+    'S': [],
+    'X': None  # card back texture object
+}
 
 
-# define card class
-class Card:
-    def __init__(self, suit, rank):
-        if (suit in SUITS) and (rank in RANKS):
+def extract_texture(image):
+    """
+    Load image into bytes buffer, convert to texture data
+    """
+    data = BytesIO()
+    image.save(data, format='png')
+    data.seek(0)
+    return CoreImage(BytesIO(data.read()), ext='png').texture
+
+
+def load_cards():
+    global images
+
+    card_back = extract_texture(PilImage.open('../assets/card_back.png'), 'png')
+    images['X'] = card_back
+
+    # full_deck = extract_texture(PilImage.open('../assets/deck.png'), 'png')
+    full_deck = PilImage.open('../assets/deck.png')
+
+    for row in range(4):
+        textures = []
+        suit = list(images.keys())[row]
+
+        for col in range(13):
+            spacing = (col * card_width, row * card_height, (col + 1) * card_width, (row + 1) * card_height)
+            cropped = full_deck.crop(spacing)  # crop the image
+            texture = extract_texture(cropped)
+            textures.append(texture)
+
+        images[suit] = textures
+
+
+class Card(Widget):
+    def __init__(self, suit, rank, pos, **kwargs):
+        super().__init__(**kwargs)
+
+        if (suit in suits) and (rank in ranks):
             self.suit = suit
             self.rank = rank
         else:
-            self.suit = None
-            self.rank = None
-            print "Invalid card: ", suit, rank
+            raise ValueError(f"Invalid card: {suit}{rank}")
 
-    def __str__(self):
-        return self.suit + self.rank
+        self.pos = pos
+        self.size = (card_width, card_height)
+        self.texture = textures[self.suit][index[self.rank]]
 
-    def get_suit(self):
-        return self.suit
 
-    def get_rank(self):
-        return self.rank
+Card(suit='A', rank='A', pos = suits.index(suit) * card_height, ranks.index(rank) * card_width)
 
-    def draw(self, canvas, pos):
-        card_loc = (CARD_CENTER[0] + CARD_SIZE[0] * RANKS.index(self.rank), 
-                    CARD_CENTER[1] + CARD_SIZE[1] * SUITS.index(self.suit))
-        canvas.draw_image(card_images, card_loc, CARD_SIZE, [pos[0] + CARD_CENTER[0], pos[1] + CARD_CENTER[1]], CARD_SIZE)
-        
-# define hand class
+
 class Hand:
+    __counter = 0
+
     def __init__(self):
         self.cards = []
-        self.value = 0
+        self.point = 0
 
     def __str__(self):
-        hand_str = "Hand contains "
+        out_str = "Hand contains:"
         for card in self.cards:
-            hand_str += (card.suit + card.rank + ' ')
-        return hand_str
+            out_str += (' ' + card.suit + card.rank)
+        return out_str
 
     def add_card(self, card):
         self.cards.append(card)
-        self.value += VALUES[card.get_rank()]
+        self.point += value[card.rank]
 
     def get_value(self):
         # check if hand has aces
         has_ace = False
         for card in self.cards:
-            if card.get_rank() == RANKS[0]:
+            if card.rank == 'A':
                 has_ace = True
-                
-        # always count aces as 1 in self.value, if the hand has an ace, add 10 to it if it doesn't bust
-        # don't worry about if a hand has more than one ace, because if you add 10 * 2, it always busts
+                break
+
+        # if the hand has an ace, add 10 to self.point unless it would bust
+        # any hand can only have one ace valued as 11, as 11 * 2 would bust
         if not has_ace:
-            return self.value
+            return self.point
         else:
-            if self.value + 10 <= 21:
-                return self.value + 10
+            if self.point + 10 <= 21:
+                return self.point + 10
             else:
-                return self.value
-            
-    def draw(self, canvas, pos):
-        card_pos = pos
-        for card in self.cards:
-            card.draw(canvas, card_pos)
-            card_pos[0] += CARD_SIZE[0] + 10
- 
-        
-# define deck class 
+                return self.point
+
+    @staticmethod
+    def count():
+        return Hand.__counter
+
+
 class Deck:
     def __init__(self):
-        self.cards = [Card(suit, rank) for suit in SUITS for rank in RANKS]
+        self.cards = [Card(suit=suit, rank=rank, pos=None) for suit in suits for rank in ranks]
 
     def shuffle(self):
         random.shuffle(self.cards)
 
-    def deal_card(self):
+    def deal(self):
         card = random.choice(self.cards)
         self.cards.remove(card)
         return card
-    
-    def __str__(self):
-        deck_str = "Deck contains "
-        for card in self.cards:
-            deck_str += (card.suit + card.rank + ' ')
-        return deck_str
 
 
-#define event handlers for buttons
-def deal():
-    global outcome, in_play, deck, player_hand, dealer_hand, score
-    
-    if in_play:
-        outcome =  "You have surrendered, new deal?"
-        in_play = False
-        score -= 1
-    
-    outcome = ""
-    deck = Deck()
-    deck.shuffle()
-    player_hand = Hand()
-    dealer_hand = Hand()
-    
-    for i in range(2):
-        player_hand.add_card(deck.deal_card())
-        dealer_hand.add_card(deck.deal_card())
-    
-    outcome = "Hit or stand?"
-    in_play = True
+class Root(BoxLayout):
+    score = NumericProperty(0)
+    outcome = StringProperty(None)
+    d1 = d2 = d3 = d4 = d5 = d6 = d7 = ObjectProperty(None)
+    p1 = p2 = p3 = p4 = p5 = p6 = p7 = ObjectProperty(None)
 
-def hit():
-    global score, in_play, outcome
-    # if the hand is in play, hit the player
-    if in_play:
-        player_hand.add_card(deck.deal_card())
-   
-        # if busted, assign a message to outcome, update in_play and score
-        if player_hand.get_value() > 21:
-            outcome =  "You have busted, new deal?"
-            in_play = False
-            score -= 1
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.is_win = False
+        self.outcome = ''
+        self.score = 0
+        self.in_play = False
+        self.deck = Deck()
+        self.deck.shuffle()
+        self.dealer_hand = Hand()
+        self.player_hand = Hand()
 
-def stand():
-    global in_play, outcome, score
-    # if hand is in play, repeatedly hit dealer until his hand has value 17 or more
-    if in_play:
-        while dealer_hand.get_value() < 17:
-            dealer_hand.add_card(deck.deal_card())
-            
-        if dealer_hand.get_value() > 21:
-            outcome = "Dealer has busted, you win! New deal?"
-            in_play = False
-            score += 1
-        else:
-            in_play = False
-            if player_hand.get_value() <= dealer_hand.get_value():
-                outcome = "You lose, new deal?"
-                score -= 1
+    def deal(self):
+        for i in range(2):
+            self.player_hand.add_card(self.deck.deal())
+            self.dealer_hand.add_card(self.deck.deal())
+            self.score -= 1
+
+        self.outcome = "Hit or stand?"
+        self.in_play = True
+
+    def hit(self):
+        if self.in_play:
+            self.player_hand.add_card(self.deck.deal())
+            if self.player_hand.get_value() > 21:  # busted
+                self.outcome = "You have busted, new deal?"
+                self.in_play = False
+                self.score -= 1
+
+    def stand(self):
+        if self.in_play:
+            # hit dealer until his hand has value 17 or more
+            while self.dealer_hand.get_value() < 17:
+                self.dealer_hand.add_card(self.deck.deal())
+
+            if self.dealer_hand.get_value() > 21:
+                self.outcome = "Dealer has busted, you win! New deal?"
+                self.score += 1
             else:
-                outcome = "You win! New deal?"
-                score += 1
+                if self.player_hand.get_value() <= self.dealer_hand.get_value():
+                    self.outcome = "You lose, new deal?"
+                    self.score -= 1
+                else:
+                    self.outcome = "You win! New deal?"
+                    self.score += 1
 
-    # assign a message to outcome, update in_play and score
-
-# draw handler    
-def draw(canvas):
-    global in_play, outcome
-    canvas.draw_text("WELCOME TO BLACKJACK!", [20, 50], 30, "Black")
-    canvas.draw_text("Dealer", [32, 230], 20, "Black")
-    canvas.draw_text("Player", [32, 460], 20, "Black")
-    canvas.draw_text("score: " + str(score), [370, 120], 30, "Aqua")
-    canvas.draw_text(outcome, [120, 360], 30, "Yellow")
-    
-    dealer_hand.draw(canvas, [120, 180])
-    player_hand.draw(canvas, [120, 410])
-    
-    if in_play:
-        canvas.draw_image(card_back, (CARD_CENTER[0], CARD_CENTER[1]), CARD_SIZE, 
-                          [120 + CARD_SIZE[0]/2, 180 + CARD_SIZE[1]/2], CARD_SIZE
-                         )
-
-# initialization frame
-frame = simplegui.create_frame("Blackjack", 600, 600)
-frame.set_canvas_background("Green")
-
-#create buttons and canvas callback
-frame.add_button("Deal", deal, 200)
-frame.add_button("Hit",  hit, 200)
-frame.add_button("Stand", stand, 200)
-frame.set_draw_handler(draw)
+            self.in_play = False
 
 
-# get things rolling
-deal()
-frame.start()
+class Game(MDApp):
+    title = 'Blackjack'
+
+    def build(self):
+        self.theme_cls.primary_palette = "LightBlue"
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_hue = "600"
+        root = Root()
+        root.deal()
+        return root
 
 
-# remember to review the gradic rubric
+if __name__ == '__main__':
+    # load card sprite
+    load_cards()
+
+    from kivy.config import Config
+    Config.set('input', 'mouse', 'mouse, disable_multitouch')  # must be called before importing Window
+
+    from kivy.core.window import Window
+    Window.size = (980, 810)
+    Window.clearcolor = get_color_from_hex('#BCADA1')
+
+    Builder.load_file('memory.kv')
+    LabelBase.register(name='perpeta', fn_regular='../assets/perpeta.ttf')
+    LabelBase.register(name='Lato', fn_regular='../assets/Lato-Regular.ttf')
+    LabelBase.register(name='OpenSans', fn_regular='../assets/OpenSans-Regular.ttf')
+
+    Game().run()
+

@@ -79,7 +79,7 @@ For any chaotic configuration, clicking the "solve puzzle" button enters the sol
 
 To make a slack UI design, the window is drawn in dark mode, and the board canvas uses a CSS light gradient background. On top of that, each tile superimposes a rectangle graphic instruction to increase the hue, draws the label number and applies a CSS style border image using a transparent crystal ball image. Below are the screenshots.
 
-__*__ Github has a limit on frame rate ~ 20 fps so the GIF is not rendered at the original speed (60 fps).
+__*__ Github may have a limit on frame rate so the GIF may not be rendered at a speed > 60 fps.
 
 |      enter a move string      |     move string too long      |
 | :---------------------------: | :---------------------------: |
@@ -192,6 +192,15 @@ Given that every call in kivy is asynchronous, execution does not wait for anima
 <br/>
 
 ### Blackjack
+
+```bash
+$ convert 1.png 2.png 3.png ... +append out.png  # merge horizontally
+$ convert 1.png 2.png 3.png ... -append out.png  # merge vertically
+```
+
+
+
+assets courtesy of
 
 
 
