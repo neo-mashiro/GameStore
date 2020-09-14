@@ -13,13 +13,13 @@ It might be a nice attempt to deploy kivy apps online and render them in a web b
 
 As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, the **Memory** game has nothing fancy in it, both the logic and UI design looks simple at first glance. However, it turns out to be quite hard as soon as you start coding, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not as easy to handle concurrency as appropriate (which comes from the animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
 
-Game                   | Stars 
-:------------------------:|:------------------------:
-[Stopwatch](#stopwatch) | ★☆☆☆☆
-[Pong](#pong) | ★★☆☆☆
-[2048](#2048) | ★★★★☆
-[15 puzzle](#15-puzzle) | ★★★★☆
-[Memory](#memory) | ★★★★★
+Game                      | Stars 
+:------------------------:|:-----:
+[Stopwatch](#stopwatch)   | ★☆☆☆☆
+[Pong](#pong)             | ★★☆☆☆
+[2048](#2048)             | ★★★★☆
+[15 puzzle](#15-puzzle)   | ★★★★☆
+[Memory](#memory)         | ★★★★★
  TBD | ☆☆☆☆☆ 
  TBD | ☆☆☆☆☆ 
 
@@ -77,12 +77,12 @@ To make a slack UI design, the window is drawn in dark mode, and the board canva
 
 __*__ Github may have a limit on frame rate so the GIF may not be rendered at a speed > 60 fps.
 
-|      enter a move string      |     move string too long      |
-| :---------------------------: | :---------------------------: |
-| ![](assets/15_puzzle_ui1.png) | ![](assets/15_puzzle_ui2.png) |
+|      enter a move string      |      move string too long      |
+| :---------------------------: | :----------------------------: |
+| ![](assets/15_puzzle_ui1.png) | ![](assets/15_puzzle_ui2.png)  |
 
-|      print moves (dark mode)      |     a simple demo             |
-| :---------------------------: | :---------------------------: |
+|    print moves (dark mode)    |         a simple demo          |
+| :---------------------------: | :----------------------------: |
 | ![](assets/15_puzzle_ui3.png) | ![](assets/15_puzzle_demo.gif) |
 
 <br/>
