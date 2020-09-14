@@ -24,7 +24,6 @@ Game                   | Stars
  TBD | ☆☆☆☆☆ 
 
 <br/>
-<br/>
 
 ## Stopwatch
 
@@ -37,7 +36,6 @@ __Game Logic:__ The window as a vertical box layout contains three rows: a clock
 </p>
 
 <br/>
-<br/>
 
 ## Pong
 
@@ -49,7 +47,6 @@ __Game Logic:__ A ball spawns from the center of the window, moves at an initial
   <img src="assets/pong_play.png">
 </p>
 
-<br/>
 <br/>
 
 ## 2048
@@ -64,7 +61,6 @@ in play                   | win
 :------------------------:|:------------------------:
 ![](assets/2048_play.png) | ![](assets/2048_win.png)
 
-<br/>
 <br/>
 
 ## 15 puzzle
@@ -89,7 +85,6 @@ __*__ Github may have a limit on frame rate so the GIF may not be rendered at a 
 | :---------------------------: | :---------------------------: |
 | ![](assets/15_puzzle_ui3.png) | ![](assets/15_puzzle_demo.gif) |
 
-<br/>
 <br/>
 
 ## Memory
@@ -189,7 +184,6 @@ Given that every call in kivy is asynchronous, execution does not wait for anima
 ![image](assets/memory_demo.gif)
 
 <br/>
-<br/>
 
 ### Blackjack
 
@@ -204,7 +198,6 @@ assets courtesy of
 
 
 
-<br/>
 <br/>
 
 
