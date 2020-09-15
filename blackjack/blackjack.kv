@@ -1,3 +1,6 @@
+#: import card_width __main__.card_width
+#: import card_height __main__.card_height
+
 <Label>:
     font_name: 'perpeta'  # perpeta
     font_size: 25
@@ -7,7 +10,7 @@
 <MyButton@MDRectangleFlatButton>:
     font_name: 'OpenSans'
     font_size: 15
-    pos_hint: {"center_y": 0.55}
+    pos_hint: {"center_y": 0.5}
     text_color: 0, 0, 0, 1
     md_bg_color: 0/255, 138/255, 230/255, 1
 
@@ -25,103 +28,116 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "../assets/card_board.jpg"
-
-    Label:
-        text: "Welcome to BlackJack!"
+            source: "../assets/neon.jpg"
 
     BoxLayout:
         orientation: 'horizontal'
-        padding: 0, 20, 190, 0  # left-top-right-bottom
+        padding: 0, 20, 0, 0  # left-top-right-bottom
         spacing: 30
-        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
 
         Image:
             source: '../assets/dice.png'
 
         Label:
-            text: "score: 0"
+            text: "Welcome to Casino!"
+            font_size: 35
 
         Image:
             source: '../assets/hand.png'
 
     Label:
-        text: root.outcome
+        text: 'Score: ' + str(table.score)
+        size_hint: (1, 0.2)
+
+    Label:
+        text: table.outcome
+        font_size: 30
+        size_hint: (1, 0.3)
+        color: 0, 0, 0, 1
 
     BoxLayout:
         orientation: 'horizontal'
-        padding: 0, 20, 190, 0  # left-top-right-bottom
+        padding: 240, 0, 0, 0  # left-top-right-bottom
         spacing: 30
-        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+        size_hint: (1, 0.3)
 
-        Label:
-            pos_hint: {"center_y": 0.5}
-            text: 'Dealer'
-
-        GridLayout:
-            rows: 1
-            cols: 7
-            spacing: 10
-
-            Card:
-                id: d1
-            Card:
-                id: d2
-            Card:
-                id: d3
-            Card:
-                id: d4
-            Card:
-                id: d5
-            Card:
-                id: d6
-            Card:
-                id: d7
-
-    BoxLayout:
-        orientation: 'horizontal'
-        padding: 0, 20, 190, 0  # left-top-right-bottom
-        spacing: 30
-        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+        canvas:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: '../assets/wood.jpg'
 
         MyButton:
             text: 'Deal'
-            on_press: root.deal(board.theme)
+            on_press: table.deal()
 
         MyButton:
             text: 'Hit'
-            on_press: root.hit()
+            on_press: table.hit()
 
         MyButton:
             text: 'Stand'
-            on_press: root.stand()
+            on_press: table.stand()
 
-    BoxLayout:
-        orientation: 'horizontal'
-        padding: 0, 20, 190, 0  # left-top-right-bottom
-        spacing: 30
-        size_hint: (1, 70/(board.card_height * board.rows + border_size * 2 + 70))
+    FloatLayout:
+        size_hint: (1, 2)
+
+        canvas:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: '../assets/table.png'
 
         Label:
-            pos_hint: {"center_y": 0.5}
-            text: 'Player'
+            text: 'DEALER'
+            color: 0, 0, 0, 1
+            pos_hint: {'center_x': 0.1, 'center_y': 3/4}
+
+        Label:
+            text: 'PLAYER'
+            color: 0, 0, 0, 1
+            pos_hint: {'center_x': 0.1, 'center_y': 1/4}
+
+        # ------------------------------------------------------
+        # layout unit test
+        # ------------------------------------------------------
+        # GridLayout:
+        #     cols: 7
+        #     pos_hint: {'x': 0.2, 'center_y': 0.5}
+        #
+        #     canvas:
+        #         Color:
+        #             rgba: 1, 0, 0, 1
+        #
+        #         Rectangle:
+        #             pos: self.pos
+        #             size: self.size
+        #
+        #         Color:
+        #             rgba: 1, 0, 1, 1
+        #
+        #         Rectangle:
+        #             pos: self.pos
+        #             size: (self.size[0], self.size[1]/2)
+        # ------------------------------------------------------
 
         GridLayout:
-            rows: 1
             cols: 7
-            spacing: 10
+            pos_hint: {'x': 0.2, 'center_y': 0.5}
 
-            Card:
-                id: p1
-            Card:
-                id: p2
-            Card:
-                id: p3
-            Card:
-                id: p4
-            Card:
-                id: p5
-            Card:
-                id: p6
-            Card:
-                id: p7
+            canvas:
+                Line:
+                    points: [0, self.size[1]/2, self.size[0], self.size[1]/2]
+                    width: 2
+
+        Table:
+            id: table
+            rows: self.rows
+            cols: self.cols
+            spacing: (12, 25)
+            padding: (12, 12, 12, 0)
+            col_default_width: card_width/1.75
+            row_default_height: card_height/1.75
+            col_force_default: True
+            row_force_default: True
+            pos_hint: {'x': 0.2, 'center_y': 0.5}
