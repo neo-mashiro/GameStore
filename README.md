@@ -20,8 +20,8 @@ Game                      | Stars
 [2048](#2048)             | ★★★★☆
 [15 puzzle](#15-puzzle)   | ★★★★☆
 [Memory](#memory)         | ★★★★★
- TBD | ☆☆☆☆☆ 
- TBD | ☆☆☆☆☆ 
+[Blackjack](#blackjack) | ★★★☆☆ 
+[Asteroids](#asteroids) | ★★★☆☆ 
 
 <br/>
 
@@ -93,8 +93,9 @@ A nice matching game that tests your short-term memory.
 
 __Game Logic:__ The objective of this game is to match all cards on the board. The board has 36 cells, comprised of 18 pairs of cards, face down in random order. The player turns over two cards at a time, with the goal of turning over a matching pair, by using his memory. A matched pair will stay visible on board, a mismatched pair will be turned back 0.5 seconds after they are turned over. Here I'm using images of weapons from the [CSGO](https://store.steampowered.com/app/730/CounterStrike_Global_Offensive/) inventory to simulate case opening, for fun. Of course, there's no way I could afford these rare items with real $dollars.
 
-![image](assets/memory1.png)
-
+<p align="center">
+  <img src="assets/memory1.png">
+</p>
 
 
 The complexity of this game mainly comes from concurrency issues, most of which stem from the animation effects (also the popup dialog window). The key functions are coded as described below, but there are many corner cases in the caller elsewhere. In brief, card animation is achieved by animating the image texture opacity, first from 1 to 0, then change texture (flip the card), then from 0 to 1, so as to visually create a fade effect. Without animation effects, it would be a lot easier to implement.
@@ -181,7 +182,9 @@ Given that every call in kivy is asynchronous, execution does not wait for anima
 
 **A small demo:**
 
-![image](assets/memory_demo.gif)
+<p align="center">
+  <img src="assets/memory_demo.gif">
+</p>
 
 <br/>
 
@@ -202,7 +205,9 @@ $ convert 1.png 2.png 3.png ... -append out.png  # merge vertically
 
 As a simplified version, this implementation does not incorporate any rules of play at real casinos, no double, no splits, no hole card. The most basic strategy is to reference a cheat sheet that every gambler in Las Vegas has.
 
-![image](assets/blackjack.png)
+<p align="center">
+  <img src="assets/blackjack.png">
+</p>
 
 <br/>
 
