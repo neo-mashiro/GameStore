@@ -185,23 +185,59 @@ Given that every call in kivy is asynchronous, execution does not wait for anima
 
 <br/>
 
-### Blackjack
+## Blackjack
+
+A simplified version of the most widely played casino banking game [Blackjack](https://en.wikipedia.org/wiki/Blackjack).
+
+__Game Logic:__ Basically this is a comparing card game between the player and the dealer. On start, the dealer is dealt two cards, one up (exposed) and one down (hidden). The player is also dealt two cards, face up. The player has the option to draw new cards from the deck (hit), or complete his hand without drawing new cards (stand). Then the dealer exposes his hidden card, repeatedly draw new cards until his hand has value > 17. Finally, their hand values are compared to each other, the player wins if and only if his hand value is strictly greater than the dealer's and he did not bust. If the player busted (has a hand value that exceeds 21), he always loses the game even if the dealer has also busted.
+
+The value of a card depends on the rank rather than the suit. A number card has value equal to the number, a face card (K, Q, J) has value 10. Ace card is worth either 1 or 11 (of the player's choice). A hand's value is the sum of the card values.
+
+This game uses the minimalist playing card assets pack courtesy of [Lokesh Mehra](https://opengameart.org/users/mehrasaur). To facilitate card image cropping, I have concatenated all cards into a sprite sheet without borders, one row for each suit, one column for each rank, using `convert` on the command line.
 
 ```bash
 $ convert 1.png 2.png 3.png ... +append out.png  # merge horizontally
 $ convert 1.png 2.png 3.png ... -append out.png  # merge vertically
 ```
 
+As a simplified version, this implementation does not incorporate any rules of play at real casinos, no double, no splits, no hole card. The most basic strategy is to reference a cheat sheet that every gambler in Las Vegas has.
+
+![image](assets/blackjack.png)
+
+<br/>
+
+## Asteroids
+
+A space-themed multi-directional shooter arcade game.
+
+__Game Logic:__ A shooter game simply does not need any logic, but to make it more playable, I have modified the original version into a flavor that feels more like Raiden III.
 
 
-assets courtesy of
+
+
+
+
+
+
+
+
+
+
 
 
 
 <br/>
 
 
-Pyinstaller / Nuitka: package to .exe
+
+<br/>
+
+
+
+<br/>
+
+
+
 
 
 

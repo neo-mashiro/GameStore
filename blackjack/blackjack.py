@@ -1,44 +1,17 @@
-"""
-number card has value equal to the number
-face card (K, Q, J) has value 10
-Ace has value 1 or 11 (player's choice)
-
-
-
-"""
-import asynckivy as ak
-import numpy as np
-import os
 import random
-import time
-
-from functools import partial
 from io import BytesIO
 from PIL import Image as PilImage
-
-from kivy.animation import Animation
-from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 from kivy.core.text import LabelBase
 from kivy.lang import Builder
-from kivy.properties import (
-    NumericProperty, ObjectProperty, StringProperty,
-    OptionProperty, BoundedNumericProperty, ListProperty
-)
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.utils import get_color_from_hex
 from kivymd.app import MDApp
-from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton
-from kivymd.uix.list import OneLineAvatarIconListItem, CheckboxRightWidget
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.widget import Widget
 
 
-# define globals for cards
 card_width = 195
 card_height = 303
 
@@ -63,7 +36,6 @@ def extract_texture(image):
 
 def load_cards():
     global images
-
     card_back = extract_texture(PilImage.open('../assets/card_back.png'))
     images['X'] = card_back
 
@@ -109,7 +81,7 @@ class Card(Widget):
         if visible:
             self.texture = images[self.suit][Card.index[self.rank]]
         else:
-            self.texture = images['X']
+            self.texture = images['X']  # card back
 
 
 class Hand:
@@ -186,10 +158,9 @@ class Table(GridLayout):
         self.rows = 2
         self.cols = 8
 
-        self.is_win = False
         self.outcome = ''
         self.score = 0
-        self.in_play = False
+        self.in_play = False  # disable buttons if in play
 
         self.deck = None
         self.dealer_hand = None
@@ -231,15 +202,12 @@ class Table(GridLayout):
 
         self.outcome = "Hit or stand?"
         self.in_play = True
-        self.is_win = False
 
     def hit(self):
         if self.in_play:
-            for idx, card in enumerate(self.player_hand):
-                if not card.visible:
-                    self.player_hand[idx].set_visible(True)
-                    self.player_hand[idx].opacity = 1
-                    break
+            nxt = self.player_hand.count()
+            self.player_hand[nxt].set_visible(True)
+            self.player_hand[nxt].opacity = 1
 
             if self.player_hand.get_value() > 21:
                 self.outcome = "You have busted, new deal?"
@@ -250,7 +218,9 @@ class Table(GridLayout):
         if self.in_play:
             # hit dealer until his hand has value 17 or more
             while self.dealer_hand.get_value() < 17:
-                self.dealer_hand.add_card(self.deck.deal())
+                nxt = self.dealer_hand.count()
+                self.dealer_hand[nxt].set_visible(True)
+                self.dealer_hand[nxt].opacity = 1
 
             if self.dealer_hand.get_value() > 21:
                 self.outcome = "Dealer has busted, you win! New deal?"
@@ -294,8 +264,6 @@ if __name__ == '__main__':
 
     Builder.load_file('blackjack.kv')
     LabelBase.register(name='perpeta', fn_regular='../assets/perpeta.ttf')
-    LabelBase.register(name='Lato', fn_regular='../assets/Lato-Regular.ttf')
     LabelBase.register(name='OpenSans', fn_regular='../assets/OpenSans-Regular.ttf')
 
     Game().run()
-
