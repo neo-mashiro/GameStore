@@ -1,3 +1,7 @@
+#: import parse_color kivy.utils.get_color_from_hex
+#: import wipe kivy.uix.screenmanager.WipeTransition
+
+
 #<Ball>:
 #    size: 60, 60
 #    canvas:
@@ -7,14 +11,31 @@
 #            size: self.size
 #            source: "../assets/pong_ball.png"
 #
-#<Paddle>:
-#    size: 10, self.length  # dynamically updated in .py
-#    canvas:
+#<Raider>:
+#    size: 154/1.5, 224/2 + 30
+#    size_hint: (None, None)
+#
+#    canvas.before:
 #        Color:
-#            rgba: 0, 0, 0, 0.6  # rgb range (0, 255) is scaled to (0, 1)
-#        Rectangle:
+#            rgba: (255/255, 255/255, 204/255, 0.2) if app.root.time_elapsed // 2 == 0 else (1,1,1,0)
+#        Ellipse:
 #            pos: self.pos
 #            size: self.size
+#
+#    canvas:
+#        Color:
+#            rgba: parse_color('#ffffff')
+#        Rectangle:
+#            pos: self.pos
+#            size: (self.size[0], 80) if self.thrust else (0, 0)
+#            source: '../assets/thrust.png'
+#        Rectangle:
+#            pos: self.pos[0], self.pos[1] + 30
+#            size: self.size[0], self.size[1] - 30
+#            source: '../assets/raider.png'
+
+
+
 #
 #
 ## style the root widget
@@ -77,8 +98,14 @@
     font_name: 'OpenSans'
     font_size: 20
     pos_hint: {"center_y": 0.5}
+    size_hint: None, None
+    width: dp(180) + (self.ids.lbl_txt.texture_size[0] - self.ids.lbl_txt.texture_size[0])
+    height: dp(40)
     text_color: 1, 1, 1, 1
     md_bg_color: 0, 1, 0, 0.2
+
+
+################################################################################
 
 <Root>:
     Login:
@@ -133,19 +160,21 @@
             source: '../assets/galaxy.png'
 
         MyButton:
-            text: 'PRESS TO START'
+            text: 'START'
+
             pos_hint: {"center_x": 0.5, "center_y": 0.5}
             on_release:
+                root.manager.transition = wipe()
+                root.manager.screens[1].in_play = True
                 app.root.current = 'space'
-                root.manager.transition.direction = 'left'
 
         MyButton:
-            text: '       OPTIONS       '
+            text: 'OPTION'
             pos_hint: {"center_x": 0.5, "center_y": 0.4}
             on_release: ...
 
         MyButton:
-            text: '           QUIT           '
+            text: 'QUIT'
             pos_hint: {"center_x": 0.5, "center_y": 0.3}
             on_release: app.stop()
 
@@ -161,6 +190,7 @@
 
 <Space>:
     name: 'space'
+
     canvas:
         Color:
             rgba: 1, 1, 1, 1
@@ -168,10 +198,41 @@
             pos: self.pos
             size: self.size
             source: '../assets/space.jpg'
-    MyButton:
-        text: 'go back'
-        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-        on_release:
-            app.root.current = 'login' if True else 'space'
-            root.manager.transition.direction = 'right'
 
+    MyButton:
+        text: 'BACK'
+        pos_hint: {"center_x": 0.1, "center_y": 0.96}
+        width: dp(48) + (self.ids.lbl_txt.texture_size[0] - self.ids.lbl_txt.texture_size[0])
+        height: dp(30)
+        md_bg_color: parse_color('#18294a')
+        on_release:
+            root.manager.transition = wipe()
+            app.root.current = 'login'
+
+    Raider:
+        center_x: root.center_x
+        size: 154/1.5, 224/2 + 30
+        size_hint: (None, None)
+
+        canvas.before:
+            Color:
+                rgba: (1, 1, 1, 1) if root.timer < 40 and root.timer % 2 == 0 else (1, 1, 1, 0)
+            Ellipse:
+                pos: self.pos
+                size: self.size
+                source: '../assets/shield.png'  # invincible mode with shield
+
+        canvas:
+            Color:
+                rgba: parse_color('#ffffff')
+            Rectangle:
+                pos: self.pos
+                size: (self.size[0], 80) if self.thrust else (0, 0)
+                source: '../assets/thrust.png'
+            Rectangle:
+                pos: self.pos[0], self.pos[1] + 30
+                size: self.size[0], self.size[1] - 30
+                source: '../assets/raider.png'
+
+
+# rock, missile, stone, thunder
