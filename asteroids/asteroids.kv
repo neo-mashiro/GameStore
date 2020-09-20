@@ -1,92 +1,6 @@
 #: import parse_color kivy.utils.get_color_from_hex
 #: import wipe kivy.uix.screenmanager.WipeTransition
-
-
-#<Ball>:
-#    size: 60, 60
-#    canvas:
-#        Ellipse:
-#            # in kivy, pos/origin is at the bottom left, drawing goes towards the top right direction
-#            pos: self.pos  # to be set in the root widget or updated in .py
-#            size: self.size
-#            source: "../assets/pong_ball.png"
-#
-#<Raider>:
-#    size: 154/1.5, 224/2 + 30
-#    size_hint: (None, None)
-#
-#    canvas.before:
-#        Color:
-#            rgba: (255/255, 255/255, 204/255, 0.2) if app.root.time_elapsed // 2 == 0 else (1,1,1,0)
-#        Ellipse:
-#            pos: self.pos
-#            size: self.size
-#
-#    canvas:
-#        Color:
-#            rgba: parse_color('#ffffff')
-#        Rectangle:
-#            pos: self.pos
-#            size: (self.size[0], 80) if self.thrust else (0, 0)
-#            source: '../assets/thrust.png'
-#        Rectangle:
-#            pos: self.pos[0], self.pos[1] + 30
-#            size: self.size[0], self.size[1] - 30
-#            source: '../assets/raider.png'
-
-
-
-#
-#
-## style the root widget
-#<Root>:
-#    ball: ball
-#    player1: player1  # bind class-level property from .py to a corresponding id so as to reference it
-#    player2: player2  # property: id (property names must match with those in .py, id is user-defined)
-#
-#    # add graphics instructions in canvas (root)
-#    canvas.before:
-#        Rectangle:
-#            pos: self.pos
-#            size: self.size
-#            source: "../assets/pong_board.jpg"
-#
-#    canvas:
-#        Color:  # ~ from kivy.graphics import Color
-#            rgba: 1, 0, 0, 0.5
-#        Rectangle:  # ~ from kivy.graphics import Rectangle
-#            pos: self.center_x - 1, 0  # x, y
-#            size: 2, self.height       # width, height
-#
-#    # add widgets (can group widgets in layout, layouts can be nested, e.g. BoxLayout, FloatLayout, GridLayout)
-#    Label:
-#        # we can override the class rule at the instance level
-#        font_size: 70
-#        center_x: root.width / 4
-#        center_y: root.height / 2
-#        text: str(root.score1)
-#        color: 0, 0, 0, 1
-#
-#    Label:
-#        font_size: 70
-#        center_x: root.width / 4 * 3
-#        center_y: root.height / 2
-#        text: str(root.score2)
-#        color: 0, 0, 0, 1
-#
-#    Ball:
-#        id: ball
-#        center: root.center
-#
-#    Paddle:
-#        id: player1
-#        x: 0
-#        center_y: root.center_y
-#
-#    Paddle:
-#        id: player2
-#        x: root.width - self.width
-#        center_y: root.center_y
+#: import __ kivymd.uix.button.MDRectangleFlatIconButton
 
 <Label>:
     font_name: 'perpeta'  # perpeta
@@ -99,11 +13,26 @@
     font_size: 20
     pos_hint: {"center_y": 0.5}
     size_hint: None, None
+    # must import the kivymd button to use this trick (rebind width)
     width: dp(180) + (self.ids.lbl_txt.texture_size[0] - self.ids.lbl_txt.texture_size[0])
     height: dp(40)
     text_color: 1, 1, 1, 1
     md_bg_color: 0, 1, 0, 0.2
 
+<Sprite>:
+    size_hint: (None, None)
+    canvas:
+        PushMatrix
+        Rotate:
+            angle: self.angle
+            origin: self.center
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: self.source
+        PopMatrix
 
 ################################################################################
 
@@ -119,7 +48,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: '../assets/sprite.jpg'
+            source: '../assets/login.jpg'
 
     FloatLayout:
         canvas.before:
@@ -191,6 +120,8 @@
 <Space>:
     name: 'space'
 
+    raider: raider
+
     canvas:
         Color:
             rgba: 1, 1, 1, 1
@@ -199,29 +130,30 @@
             size: self.size
             source: '../assets/space.jpg'
 
-    MyButton:
-        text: 'BACK'
-        pos_hint: {"center_x": 0.1, "center_y": 0.96}
-        width: dp(48) + (self.ids.lbl_txt.texture_size[0] - self.ids.lbl_txt.texture_size[0])
-        height: dp(30)
-        md_bg_color: parse_color('#18294a')
-        on_release:
-            root.manager.transition = wipe()
-            app.root.current = 'login'
+    Label:
+        pos_hint: {"center_x": 0.2, "center_y": 0.96}
+        text: 'TIMER: ' + root.time_label
+
+    Label:
+        pos_hint: {"center_x": 0.8, "center_y": 0.96}
+        text: 'SCORE: ' + str(root.score)
 
     Raider:
+        id: raider
         center_x: root.center_x
         size: 154/1.5, 224/2 + 30
         size_hint: (None, None)
 
+        # protection shield
         canvas.before:
             Color:
-                rgba: (1, 1, 1, 1) if root.timer < 40 and root.timer % 2 == 0 else (1, 1, 1, 0)
+                rgba: root.rgba_label
             Ellipse:
                 pos: self.pos
                 size: self.size
                 source: '../assets/shield.png'  # invincible mode with shield
 
+        # raider ship + thrust
         canvas:
             Color:
                 rgba: parse_color('#ffffff')
@@ -233,6 +165,3 @@
                 pos: self.pos[0], self.pos[1] + 30
                 size: self.size[0], self.size[1] - 30
                 source: '../assets/raider.png'
-
-
-# rock, missile, stone, thunder
