@@ -1,4 +1,5 @@
 from kivy.config import Config
+
 # set configuration before importing other modules
 Config.set('input', 'mouse', 'mouse, disable_multitouch')
 Config.set('graphics', 'resizable', False)
@@ -11,14 +12,18 @@ from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.core.window import Keyboard, Window
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.properties import (
     NumericProperty, ObjectProperty, StringProperty,
     ListProperty, ReferenceListProperty, BooleanProperty
 )
+from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.screenmanager import Screen, ScreenManager, WipeTransition
 from kivy.vector import Vector
 from kivymd.app import MDApp
+from kivymd.uix.button import MDRectangleFlatButton
+from kivymd.uix.picker import MDTimePicker
 
 
 def collide_1_1(spr1, spr2):
@@ -77,7 +82,7 @@ class Sprite(Widget):
         self.size = size
         self.exploded = False
         self.spawn()
-        Clock.schedule_interval(self.move, 1/60)
+        Clock.schedule_interval(self.move, 1 / 60)
 
     def spawn(self):
         self.source = Sprite.__source[self.model]
@@ -181,6 +186,11 @@ class Space(Screen):
     score = NumericProperty(0)
     raider = ObjectProperty(None)
 
+    pause_label = ObjectProperty(None)
+    resume_label = ObjectProperty(None)
+    pause_button = ObjectProperty(None)
+    time_button = ObjectProperty(None)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Window.bind(on_key_down=self.on_key_down)
@@ -192,6 +202,8 @@ class Space(Screen):
         self.bonus = []
         self.cannons = []
         self.enemies = []  # meteorites, saturn, ufos and missiles...
+
+        self.time_dialog = MDTimePicker()  # test
 
     def tick(self, interval):
         if self.in_play:
@@ -245,6 +257,9 @@ class Space(Screen):
         Check boundaries and collisions, so as to remove dead widgets on a regular basis.
         Free resources periodically to prevent memory overload and make the game smooth.
         """
+        if not self.in_play:
+            return
+
         for wid in self.cannons.copy():
             if self.out_of_bound(wid):
                 self.cannons.remove(wid)
@@ -298,16 +313,45 @@ class Space(Screen):
         return False
 
     def on_touch_down(self, touch):
+        """
+        Important Notice:
+        -----------------
+        Unlike listeners such as on_press, on_release and on_key_down, which are triggered only
+        on a specific widget, on_touch_down fires everything within a widget tree, be it a button
+        click or a mouse drag event, literally any event happened on the screen. The same is true
+        for on_touch_up and on_touch_move.
+
+        The consequence of this is, when you override an on_touch method, for instance, to control
+        a moving widget with your mouse and finger touches, if there are other buttons and text
+        inputs on the same screen, they are not going to work properly since their bindings rely
+        on the original on_touch implementations. In some other scenarios, the on_touch method can
+        overshadow your defined callback, or unexpectedly fired on other objects from a different
+        widget tree, or a widget can be fired twice by different callbacks, which leads to conflict.
+
+        To get around this issue, there's only one solution: code up the overriding method partially
+        with caution, override only where you are interested using if-else, do not override the
+        whole function. Place a call to the superclass method wherever applicable, so as to inherit,
+        keep, mutate or disable the original behavior depending on the type of conflict you have.
+        """
+        if not self.in_play:
+            return super().on_touch_down(touch)
+
         if self.raider.collide_point(touch.x, touch.y):
             self.raider.offset_x = self.raider.center_x - touch.x
             self.raider.offset_y = self.raider.center_y - touch.y
 
     def on_touch_up(self, touch):
+        if not self.in_play:
+            return super().on_touch_down(touch)
+
         self.raider.thrust = False
         self.raider.offset_x = None
         self.raider.offset_y = None
 
     def on_touch_move(self, touch):
+        if not self.in_play:
+            return super().on_touch_down(touch)
+
         if self.raider.offset_x and self.raider.offset_y:
             self.raider.thrust = True
             self.raider.center_x = min(max(touch.x + self.raider.offset_x, self.raider.size[0] / 2),
@@ -315,13 +359,72 @@ class Space(Screen):
             self.raider.center_y = min(max(touch.y + self.raider.offset_y, self.raider.size[1] / 2),
                                        self.width - self.raider.size[1] / 2)
 
+    def switch_screen(self, *args):
+        # clear the pause widgets before switch
+        self.remove_widget(self.pause_label)
+        self.remove_widget(self.resume_label)
+        self.remove_widget(self.pause_button)
+        self.remove_widget(self.time_button)
+
+        self.manager.transition = WipeTransition()
+        self.manager.current = 'login'
+
+    def pause(self):
+        # pause the game and all scheduled events
+        self.in_play = False
+
+        # create pause widgets (only the first time)
+        if not self.pause_label:
+            self.pause_label = Label(font_name='perpeta', font_size=40, text='GAME PAUSED',
+                                     pos_hint={"center_x": 0.5, "center_y": 0.6})
+
+        if not self.resume_label:
+            self.resume_label = Label(font_name='perpeta', font_size=18, color=(0.8, 0.8, 0.8, 0.5),
+                                      text='PRESS ENTER AGAIN TO RESUME',
+                                      pos_hint={"center_x": 0.5, "center_y": 0.55})
+
+        if not self.pause_button:
+            self.pause_button = MDRectangleFlatButton(font_name='OpenSans', font_size=20,
+                                                      pos_hint={"center_x": 0.5, "center_y": 0.48},
+                                                      text_color=(1, 1, 1, 1),
+                                                      text='BACK TO MENU')
+            self.pause_button.md_bg_color = (0, 1, 0, 0.2)
+            self.pause_button.bind(on_release=self.switch_screen)
+
+        if not self.time_button:
+            self.time_button = MDRectangleFlatButton(font_name='OpenSans', font_size=20,
+                                                     pos_hint={"center_x": 0.5, "center_y": 0.4},
+                                                     text_color=(1, 1, 1, 1),
+                                                     text='TIME LEAP')
+            self.time_button.md_bg_color = (0, 0, 1, 0.2)
+            self.time_button.bind(on_release=self.time_dialog.open)
+
+        # display pause widgets on the screen
+        self.add_widget(self.pause_label)
+        self.add_widget(self.resume_label)
+        self.add_widget(self.pause_button)
+        self.add_widget(self.time_button)
+
+    def resume(self):
+        # clear the pause widgets before resume
+        self.remove_widget(self.pause_label)
+        self.remove_widget(self.resume_label)
+        self.remove_widget(self.pause_button)
+        self.remove_widget(self.time_button)
+
+        self.in_play = True  # resume the game
+
     def on_key_down(self, window, key, *args):
         if key == Keyboard.keycodes['spacebar']:
-            missile = self.raider.shoot()
-            self.cannons.append(missile)
-            self.add_widget(missile)
+            if self.in_play:
+                missile = self.raider.shoot()
+                self.cannons.append(missile)
+                self.add_widget(missile)
         elif key == Keyboard.keycodes['enter']:
-            ...  # dialog box
+            if self.in_play:
+                self.pause()
+            else:
+                self.resume()
 
 
 class Root(ScreenManager):
