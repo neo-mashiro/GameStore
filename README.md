@@ -2,10 +2,16 @@
 
 Draft implementations of some classic simple games in Python.
 
-Games in this repo are borrowed from the [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) offered by Rice University on Coursera, which were originally built on `codeskulptor` when I was taking the courses several years ago, located in the `simplegui` folder. I have added some customized functionalities and migrated them to [kivy](https://kivy.org/#home) so that the user interfaces look prettier with material design and animation effects. It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the amount of technical work required is anything but a non-trivial task, using web applications framework instead would be a way better option.
+Games in this repo are borrowed from the [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) offered by Rice University on Coursera, which were originally built on `codeskulptor` when I was taking the courses several years ago, located in the `simplegui` folder. I have added some customized functionalities and migrated them to [kivy](https://kivy.org/#home) so that the user interfaces look prettier with material design and animation effects.
+
+It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the amount of technical work required is anything but a non-trivial task, using web applications framework instead would be a way better option.
 
 
 ## Game list
+
+> As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, **Memory** looks simple at first glance, but it turns out to be quite hard to code, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not easy to handle concurrency as appropriate (animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
+
+- [x] Game demos available on [Youtube](www.google.com).
 
 - [2048](#2048)
 - [Asteroids](#asteroids)
@@ -14,10 +20,6 @@ Games in this repo are borrowed from the [Fundamentals of Computing Specializati
 - [15 puzzle](#15-puzzle)
 - [Blackjack](#blackjack)
 - [Stopwatch](#stopwatch)
-
-> As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, **Memory** looks simple at first glance, but it turns out to be quite hard to code, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not easy to handle concurrency as appropriate (animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
-
-- [x] Game demos available on [Youtube](www.google.com).
 
 <br/>
 
