@@ -2,9 +2,7 @@
 
 Draft implementations of some classic simple games in Python.
 
-Most games in this repo are borrowed from the [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) offered by Rice University on Coursera, which were originally built on `codeskulptor` and `simplegui` when I was taking the courses several years ago, located in the `simplegui` folder. I have added some customized functionalities and migrated them to [kivy](https://kivy.org/#home) so that the user interfaces look prettier with material design and animation effects.
-
-It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the amount of technical work required is anything but a non-trivial task, using web applications framework instead would be a way better option.
+Games in this repo are borrowed from the [Fundamentals of Computing Specialization](https://www.coursera.org/specializations/computer-fundamentals) offered by Rice University on Coursera, which were originally built on `codeskulptor` when I was taking the courses several years ago, located in the `simplegui` folder. I have added some customized functionalities and migrated them to [kivy](https://kivy.org/#home) so that the user interfaces look prettier with material design and animation effects. It might be a nice attempt to deploy kivy apps online and render them in a web browser, but currently this is not feasible. While it's not impossible to do so, the amount of technical work required is anything but a non-trivial task, using web applications framework instead would be a way better option.
 
 
 ## Game list
@@ -17,7 +15,7 @@ It might be a nice attempt to deploy kivy apps online and render them in a web b
 - [Blackjack](#blackjack)
 - [Stopwatch](#stopwatch)
 
-As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, **Memory** looks simple at first glance, but it turns out to be quite hard to code, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not easy to handle concurrency as appropriate (animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
+> As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, **Memory** looks simple at first glance, but it turns out to be quite hard to code, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not easy to handle concurrency as appropriate (animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
 
 - [x] Game demos available on [Youtube](www.google.com).
 
@@ -27,7 +25,7 @@ As a benchmark measure of **implementation complexity**, I have rated each game 
 
 Win the game by making a 2048 tile.
 
-__Game Logic:__ Use the up, down, left and right arrow keys to slide the tiles on the board. When the tiles slide, adjacent tiles with the same number will be merged into a number that is doubled, and a new tile will appear in a randomly selected empty cell. The new tile is 2 90% of the time and 4 10% of the time. If there are no more empty cells and no legal merges can be made, the board is deadlocked so the user loses. The best score is the largest tile ever made on the board.
+__Game Logic:__ Use the 4 direction arrow keys to slide the tiles on the board. When the tiles slide, adjacent tiles with the same number will be merged into a number that is doubled, and a new tile will appear in a randomly selected empty cell. The new tile is 2 90% of the time and 4 10% of the time. If there are no more empty cells and no legal merges can be made, the board is deadlocked so the user loses. The best score is the largest tile ever made on the board.
 
 ![img](assets/2048.png)
 
@@ -59,7 +57,7 @@ In the main screen, the player controls a raider with mouse drags or finger touc
 
 
 
-Event handlers are scheduled at high FPS to process group collisions in real-time, when an enemy's HP reaches 0, it explodes on the spot with 90% chance, or becomes a bonus widget bouncing off the window. If the raider catches the bonus, additional scores are earned, and the raider is protected by a light shield. There's nothing fancy going on here, explosion effects are created by manipulating widget canvas opacity coupled with a scheduled timeout event, meteorite rotations are achieved by updating the angle of a rotation graphics instruction. The only challenge of this game is about memory management. To free resources and prevent memory overload, a garbage collection function must be explicitly defined and registered, which serves to check boundaries, collisions, and remove dead sprites from the widget tree on a regular basis. These objects won't be automatically garbage collected until the references are cleared from the screen canvas.
+Event handlers are scheduled at high FPS to process group collisions in real-time, when an enemy's HP reaches 0, it explodes on the spot with 90% chance, or becomes a bonus widget bouncing off the window. If the raider catches the bonus, additional scores are earned, and the raider is protected by a light shield. There's nothing fancy going on here, explosion effects are created by manipulating widget opacity coupled with a scheduled timeout event, meteorite rotations are achieved by updating the angle of a rotation graphics instruction. The only challenge of this game is about memory management. To prevent memory overload, a garbage collection function must be explicitly defined and registered, which serves to check boundaries, collisions, and remove dead sprites from the widget tree on a regular basis. These objects won't be automatically garbage collected until the references are cleared from the screen canvas.
 
 Game assets are collected from the web with free permission, raider image asset courtesy of [dravenx](https://opengameart.org/users/dravenx).
 
@@ -86,34 +84,37 @@ The complexity of this game mainly comes from concurrency issues, most of which 
 async def flip_one(self, card, event):
     x, y = self.card_row_col(card.pos)
     new_index = self.index[x, y] if card.index == 0 else 0
+    
     # create the new card widget which is initially transparent
     flipped = Card(index=new_index, theme=self.theme,
                    pos=card.pos, size=card.size, opacity=0.5)
-
     self.cards[x, y] = flipped
+    
     # animate the old card opacity from 1 to 0.5, wait until finish, then remove the old card widget
     await ak.animate(card, opacity=0.5, duration=0.25, transition='in_out_sine')
     self.remove_widget(card)
+    
     # add the new card widget (which is transparent)
     self.add_widget(flipped)
+    
     # animate the new card opacity from 0.5 to 1, wait until finish, then set it to opaque
     await ak.animate(flipped, opacity=1, duration=0.25, transition='in_out_sine')
     self.cards[x, y].opacity = 1
-    # animation complete, notify the caller who is waiting for the event
-    event.set()
+    
+    event.set()  # animation complete, notify the caller who is waiting for the event
 
 async def flip_all(self, cards, event):
     child_events = []
-    # start asynchronous calls
-    for card in cards:
+    
+    for card in cards:  # start asynchronous calls
         child_event = ak.Event()  # each card has a child event to avoid race conditions
         child_events.append(child_event)
         ak.start(self.flip_one(card, child_event))
-    # wait until all events join
+    
     for child_event in child_events:
-        await child_event.wait()
-    # all animations complete, notify the caller who is waiting for the event
-    event.set()
+        await child_event.wait()  # wait until all events join
+
+    event.set()  # all animations complete, notify the caller who is waiting for the event
 ```
 
 Given that every call in kivy is asynchronous, execution does not wait for animations to finish but will continue immediately, leaving a vulnerable time window when many things could go awry due to race conditions. Besides, a mismatched pair of cards need to stay visible on board (sleep) for a while before they are turned back, so that players can have enough time to remember them. To handle these issues properly, my implementation uses `asynckivy` which is a new module recently released in July 2020.
@@ -221,9 +222,11 @@ __Game Logic:__ The window as a vertical box layout contains three rows: a clock
 
 <br/>
 
-To be continued......
+## To be continued...
 
+......
 
+<br/>
 
 
 # Reference
