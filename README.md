@@ -10,7 +10,7 @@ It might be a nice attempt to deploy kivy apps online and render them in a web b
 ## Game list
 
 - [x] Game demos available on [Youtube](www.google.com).
-- [2048](#2048), [Asteroids](#asteroids), [Memory](#memory), [Pong](#pong), [15 puzzle](#15-puzzle), [Blackjack](#blackjack), [Stopwatch](#stopwatch)
+- [x] [2048](#2048), [Asteroids](#asteroids), [Memory](#memory), [Pong](#pong), [15 puzzle](#15-puzzle), [Blackjack](#blackjack), [Stopwatch](#stopwatch)
 
 As a benchmark measure of **implementation complexity**, I have rated each game with stars, this is after all my personal sense so by no means objective. Code complexity is not the same as game difficulty, but an indicator of development workload and how hard it is to build the user interface. For instance, the strategy to build a **15 puzzle** solver is hard, but the UI development is trivial, the UI of **Asteroids** looks fancy, but all objects are moving asynchronously so it's easy to implement as well. In contrast, **Memory** looks simple at first glance, but it turns out to be quite hard to code, there are many corner cases that could lead to bugs, some events need to block and wait, and it's not easy to handle concurrency as appropriate (animation coroutines, popup window time delays, unexpected mouse/keyboard events, etc), especially because kivy does not work well with `sleep`, `thread`, `async` and `await`.
 
