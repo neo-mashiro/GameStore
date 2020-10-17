@@ -293,7 +293,7 @@ class Board(Widget):
         self.last_clicked = None
         self.mouse_disabled = False
 
-    async def flip_one(self, card, event):
+    async def flip_one(self, card):
         """
         Given an idle event, flip the card and wait for the animation to finish.
         Once done, activate the event so that the caller can safely continue execution.
@@ -321,9 +321,7 @@ class Board(Widget):
         await ak.animate(flipped, opacity=1, duration=0.25, transition='in_out_sine')
         self.cards[x, y].opacity = 1
 
-        event.set()  # animation complete, notify the caller who is waiting for the event
-
-    async def flip_all(self, cards, event):
+    async def flip_all(self, cards):
         """
         Given an idle event, flip a list of cards all at once and wait until all finish.
         Once done, activate the event so that the caller can safely continue execution.
@@ -331,18 +329,8 @@ class Board(Widget):
         This is the concurrent version of flip_one(), animations play simultaneously.
         Each card is tracked by a unique child event to eliminate possible race conditions.
         """
-        child_events = []
-        # start asynchronous calls
-        for card in cards:
-            child_event = ak.Event()
-            child_events.append(child_event)
-            ak.start(self.flip_one(card, child_event))
+        await ak.and_(*(self.flip_one(card) for card in cards))
 
-        # wait until all events join
-        for child_event in child_events:
-            await child_event.wait()
-
-        event.set()  # all animations complete, notify the caller who is waiting for the event
 
     async def click(self, touch):
         # disable mouse clicks until the function returns
@@ -377,10 +365,7 @@ class Board(Widget):
 
             # the 1st card is clicked on
             if self.state == 0:
-                event = ak.Event()
-                coroutine = self.flip_one(clicked_card, event)
-                ak.start(coroutine)
-                await event.wait()
+                await self.flip_one(clicked_card)
                 print('1st card flipped')
 
                 self.last_clicked = self.cards[row, col]  # after flip, the card back no longer exists
@@ -388,10 +373,7 @@ class Board(Widget):
 
             # the 2nd card is clicked on
             else:
-                event = ak.Event()
-                coroutine = self.flip_one(clicked_card, event)
-                ak.start(coroutine)
-                await event.wait()
+                await self.flip_one(clicked_card)
                 print('2nd card flipped')
 
                 # if matched, reset the board to state 0, check win conditions
@@ -413,11 +395,8 @@ class Board(Widget):
                 else:
                     await safe_sleep(0.5)
 
-                    event = ak.Event()
                     cards = [self.last_clicked, self.cards[row, col]]
-                    coroutine = self.flip_all(cards, event)
-                    ak.start(coroutine)
-                    await event.wait()
+                    await self.flip_all(cards)
                     print('both cards are hidden')
 
                     self.last_clicked = None
